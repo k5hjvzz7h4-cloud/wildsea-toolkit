@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wildsea — Tracker (Slim)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #172225; color: #e8e4d8; max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.6; }
+
+  /* ── Page header ── */
+  .page-title { font-size: 1.8rem; font-weight: normal; letter-spacing: 0.05em; color: #BFDFE9; margin-bottom: 1.5rem; }
+
+  /* ── Tab bar ── */
+  .tab-bar { display: flex; gap: 0; border-bottom: 1px solid #3a5058; margin-bottom: 2rem; }
+  .tab-btn { font-family: Georgia, serif; font-size: 0.95rem; font-weight: normal; letter-spacing: 0.06em; padding: 0.6rem 1.75rem; background: none; border: 1px solid transparent; border-bottom: none; color: #5a7a86; cursor: pointer; position: relative; bottom: -1px; transition: all 0.15s; }
+  .tab-btn:hover { color: #9ab0ba; }
+  .tab-btn.active { color: #BFDFE9; background: #172225; border-color: #3a5058; border-bottom-color: #172225; }
+
+  /* ── Tab panels ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Shared: subtitle ── */
+  .subtitle { font-size: 0.9rem; color: #7a8e96; margin-bottom: 1.75rem; font-style: italic; }
+
+  /* ── Shared: toolbar ── */
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; }
+  .btn { padding: 8px 22px; border: 1px solid #4a6570; background: #253338; color: #BFDFE9; font-family: Georgia, serif; font-size: 0.9rem; cursor: pointer; letter-spacing: 0.05em; transition: all 0.15s; }
+  .btn:hover { background: #2a3d44; border-color: #BFDFE9; }
+  .btn:active { transform: scale(0.97); }
+  .btn.add-btn  { border-color: #5a8070; color: #8ac4aa; }
+  .btn.add-btn:hover  { border-color: #8ac4aa; background: #1f2f2a; }
+  .btn.save-btn { border-color: #6a7050; color: #b0b880; }
+  .btn.save-btn:hover { border-color: #b0b880; background: #222818; }
+  .toolbar-sep { flex: 1; }
+  .flash { font-size: 0.78rem; color: #8ac4aa; font-style: italic; opacity: 0; transition: opacity 0.3s; }
+  .flash.show { opacity: 1; }
+
+  /* ── Shared: empty state ── */
+  .empty-state { background: #1D2D31; border: 1px solid #2e3f45; padding: 2.5rem; text-align: center; color: #5a7078; font-style: italic; }
+
+  /* ── Shared: icon buttons ── */
+  .icon-btn { background: none; border: 1px solid transparent; color: #5a7078; cursor: pointer; font-size: 0.78rem; padding: 4px 8px; font-family: Georgia, serif; letter-spacing: 0.05em; transition: all 0.12s; flex-shrink: 0; }
+  .icon-btn:hover { color: #9ab0ba; border-color: #3a5058; }
+  .icon-btn.delete-btn:hover { color: #c07070; border-color: #703030; }
+
+  /* ── Shared: notes ── */
+  .notes-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.18em; color: #6a7e86; white-space: nowrap; flex-shrink: 0; }
+  .notes-display { font-size: 0.88rem; color: #9aacb4; font-style: italic; flex: 1; cursor: pointer; min-height: 1.3em; }
+  .notes-display:empty::before { content: 'Click to add notes…'; color: #3a5058; }
+  .notes-display:hover { color: #b0c4cc; }
+  .notes-input { background: #1a2c30; border: 1px solid #5a8070; color: #c0d4dc; font-family: Georgia, serif; font-size: 0.88rem; padding: 5px 8px; width: 100%; resize: vertical; min-height: 2.2em; font-style: italic; }
+  .notes-input:focus { outline: none; border-color: #8ac4aa; }
+
+  /* ── Page footer ── */
+  .page-footer { padding: 1.25rem 0 0; font-size: 0.78rem; color: #3a5058; font-style: italic; }
+
+  /* ════════════════════════════════════════════════════
+     TRACKS TAB
+  ════════════════════════════════════════════════════ */
+  .tr-card { background: #1D2D31; border: 1px solid #3a5058; margin-bottom: 0.6rem; }
+  .tr-card.editing { border-color: #5a8070; }
+  .tr-card.completed { border-color: #3a5848; opacity: 0.7; }
+  .tr-card.completed .tr-pip.filled { background: #4a7a60; border-color: #4a7a60; }
+
+  .tr-header { padding: 0.55rem 1rem; display: flex; align-items: center; gap: 0.75rem; min-height: 2.4rem; }
+  .tr-header-left { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; }
+  .tr-header-pips { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+  .tr-header-pips .tr-pip { pointer-events: none; width: 14px; height: 14px; }
+  .tr-card.expanded > .tr-header > .tr-header-pips { display: none; }
+  .tr-body-wrap { display: none; border-top: 1px solid #2e3f45; }
+  .tr-card.expanded .tr-body-wrap { display: block; }
+  .tr-name-display { font-size: 1rem; color: #e8e4d8; font-weight: normal; letter-spacing: 0.03em; cursor: pointer; }
+  .tr-name-display:hover { color: #BFDFE9; }
+  .tr-name-input { background: #253338; border: 1px solid #5a8070; color: #e8e4d8; font-family: Georgia, serif; font-size: 0.95rem; padding: 3px 7px; width: 100%; letter-spacing: 0.03em; }
+  .tr-name-input:focus { outline: none; border-color: #8ac4aa; }
+
+  .tr-pips-row { padding: 0.6rem 1rem; border-bottom: 1px solid #2e3f45; display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  .tr-pip-track { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; flex: 1; }
+  .tr-pip { width: 18px; height: 18px; border: 1px solid #4a7060; background: transparent; cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
+  .tr-pip.filled { background: #6aaa88; border-color: #6aaa88; }
+  .tr-pip:hover:not(.filled) { border-color: #8ac4aa; background: #1f3530; }
+  .tr-pip.filled:hover { background: #4a8a68; border-color: #4a8a68; }
+  .tr-pip-count { font-size: 0.75rem; color: #6a8e7e; white-space: nowrap; min-width: 3em; }
+
+  .tr-length-controls { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .tr-length-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.14em; color: #5a7078; margin-right: 3px; }
+  .tr-len-btn { width: 18px; height: 18px; border: 1px solid #3a5058; background: #1f2d30; color: #7a9aa8; font-family: Georgia, serif; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.12s; padding: 0; flex-shrink: 0; }
+  .tr-len-btn:hover { border-color: #6a9aaa; color: #BFDFE9; background: #253338; }
+  .tr-len-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .tr-notes-row { padding: 0.45rem 1rem; display: flex; gap: 0.75rem; align-items: baseline; }
+
+  /* ════════════════════════════════════════════════════
+     FACTIONS TAB
+  ════════════════════════════════════════════════════ */
+  .fa-card { background: #1D2D31; border: 1px solid #3a5058; margin-bottom: 0.45rem; }
+  .fa-card.editing { border-color: #5a8070; }
+
+  /* Header — always visible */
+  .fa-header { padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.75rem; min-height: 2.4rem; }
+  .fa-chevron { background: none; border: none; color: #4a6570; cursor: pointer; font-size: 0.65rem; padding: 0 2px; flex-shrink: 0; transition: transform 0.15s, color 0.12s; line-height: 1; user-select: none; }
+  .fa-chevron:hover { color: #9ab0ba; }
+  .fa-card.expanded .fa-chevron { transform: rotate(90deg); }
+  .fa-header-left { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; }
+  .fa-header-right { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+  .fa-name-display { font-size: 0.95rem; color: #e8e4d8; font-weight: normal; letter-spacing: 0.03em; cursor: pointer; }
+  .fa-name-display:hover { color: #BFDFE9; }
+  .fa-name-input { background: #253338; border: 1px solid #5a8070; color: #e8e4d8; font-family: Georgia, serif; font-size: 0.95rem; padding: 3px 7px; width: 100%; letter-spacing: 0.03em; }
+  .fa-name-input:focus { outline: none; border-color: #8ac4aa; }
+
+  /* Inline pip summary shown when collapsed */
+  .fa-pip-summary { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .fa-card.expanded .fa-pip-summary { display: none; }
+  .fa-summary-group { display: flex; gap: 3px; align-items: center; }
+  .fa-summary-dot { width: 8px; height: 8px; border: 1px solid currentColor; flex-shrink: 0; }
+  .fa-summary-dot.respect { color: #6a8040; }
+  .fa-summary-dot.respect.filled { background: #a0b870; border-color: #a0b870; }
+  .fa-summary-dot.fear    { color: #804040; }
+  .fa-summary-dot.fear.filled    { background: #b87060; border-color: #b87060; }
+  .fa-summary-dot.favour  { color: #4050a0; }
+  .fa-summary-dot.favour.filled  { background: #8090c8; border-color: #8090c8; }
+  .fa-summary-sep { width: 1px; height: 10px; background: #2e3f45; }
+
+  /* Expandable body — hidden when collapsed */
+  .fa-body-wrap { display: none; border-top: 1px solid #2e3f45; }
+  .fa-card.expanded .fa-body-wrap { display: block; }
+
+  /* Meta rows */
+  .fa-meta-row { display: flex; flex-direction: column; border-bottom: 1px solid #2e3f45; }
+  .fa-meta-cell { padding: 0.55rem 1.25rem; border-bottom: 1px solid #2e3f45; display: flex; gap: 0.75rem; align-items: baseline; }
+  .fa-meta-cell:last-child { border-bottom: none; }
+  .fa-meta-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.16em; color: #6a7e86; white-space: nowrap; flex-shrink: 0; }
+  .fa-meta-value { font-size: 0.88rem; color: #9aacb4; cursor: pointer; flex: 1; min-height: 1.2em; }
+  .fa-meta-value:empty::before { content: '—'; color: #3a5058; }
+  .fa-meta-value:hover { color: #c0d4dc; }
+  .fa-meta-input { background: #1a2c30; border: 1px solid #5a8070; color: #c0d4dc; font-family: Georgia, serif; font-size: 0.88rem; padding: 2px 6px; width: 100%; }
+  .fa-meta-input:focus { outline: none; border-color: #8ac4aa; }
+
+  /* Rep tracks */
+  .fa-body { padding: 1rem 1.25rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border-bottom: 1px solid #2e3f45; }
+  .fa-track-col { padding: 0 1rem 0 0; border-right: 1px solid #2e3f45; }
+  .fa-track-col:last-child { border-right: none; padding-right: 0; padding-left: 1rem; }
+  .fa-track-col:first-child { padding-left: 0; }
+  .fa-track-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 0.6rem; display: block; }
+  .fa-track-label.respect-l { color: #a0b870; }
+  .fa-track-label.fear-l    { color: #b87060; }
+  .fa-track-label.favour-l  { color: #8090c8; }
+  .fa-pip-track { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .fa-pip { width: 18px; height: 18px; border: 1px solid currentColor; cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
+  .fa-pip.respect { color: #6a8040; background: transparent; }
+  .fa-pip.respect.filled { background: #a0b870; border-color: #a0b870; }
+  .fa-pip.respect:hover { border-color: #a0b870; }
+  .fa-pip.fear { color: #804040; background: transparent; }
+  .fa-pip.fear.filled { background: #b87060; border-color: #b87060; }
+  .fa-pip.fear:hover { border-color: #b87060; }
+  .fa-pip.favour { color: #4050a0; background: transparent; }
+  .fa-pip.favour.filled { background: #8090c8; border-color: #8090c8; }
+  .fa-pip.favour:hover { border-color: #8090c8; }
+  .fa-pip-value { font-size: 0.8rem; color: #7a8e96; margin-left: 4px; }
+
+  /* Notes row */
+  .fa-notes-row { padding: 0.75rem 1.25rem; display: flex; gap: 1rem; align-items: flex-start; border-bottom: 1px solid #2e3f45; }
+  .fa-notes-input { background: #1a2c30; border: 1px solid #5a8070; color: #c0d4dc; font-family: Georgia, serif; font-size: 0.88rem; padding: 6px 8px; width: 100%; resize: vertical; min-height: 2.5em; font-style: italic; }
+  .fa-notes-input:focus { outline: none; border-color: #8ac4aa; }
+
+  /* Relations */
+  .fa-relations-row { padding: 0.75rem 1.25rem; }
+  .fa-relations-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .fa-relations-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.18em; color: #6a7e86; }
+  .fa-add-relation-btn { font-size: 0.72rem; color: #5a7878; cursor: pointer; background: none; border: none; font-family: Georgia, serif; letter-spacing: 0.05em; }
+  .fa-add-relation-btn:hover { color: #8ac4aa; }
+  .fa-relations-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fa-relation-tag { display: flex; align-items: center; gap: 4px; border: 1px solid #2e3f45; padding: 3px 8px; font-size: 0.78rem; }
+  .fa-relation-tag .rel-name { color: #9ab0ba; }
+  .fa-relation-tag .rel-stance { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; margin-left: 2px; }
+  .fa-relation-tag.allied   { border-color: #5a7a50; }
+  .fa-relation-tag.allied   .rel-stance { color: #8ac4aa; }
+  .fa-relation-tag.hostile  { border-color: #7a4040; }
+  .fa-relation-tag.hostile  .rel-stance { color: #c07070; }
+  .fa-relation-tag.neutral  { border-color: #3a5058; }
+  .fa-relation-tag.neutral  .rel-stance { color: #7a8e96; }
+  .fa-relation-tag.wary     { border-color: #7a6040; }
+  .fa-relation-tag.wary     .rel-stance { color: #c0a060; }
+  .fa-relation-tag.indebted { border-color: #507080; }
+  .fa-relation-tag.indebted .rel-stance { color: #80b0c8; }
+  .fa-rel-remove { background: none; border: none; color: #4a5e66; cursor: pointer; font-size: 0.7rem; padding: 0 2px; line-height: 1; }
+  .fa-rel-remove:hover { color: #c07070; }
+  .fa-rel-add-form { background: #1a2c30; border: 1px solid #3a5058; padding: 0.75rem; margin-top: 0.5rem; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .fa-rel-select { background: #253338; border: 1px solid #3a5058; color: #c0d4dc; font-family: Georgia, serif; font-size: 0.82rem; padding: 4px 8px; }
+  .fa-rel-select:focus { outline: none; border-color: #5a8070; }
+  .fa-rel-confirm-btn { padding: 4px 14px; border: 1px solid #5a7050; background: #1f2c20; color: #8ac4aa; font-family: Georgia, serif; font-size: 0.8rem; cursor: pointer; }
+  .fa-rel-confirm-btn:hover { border-color: #8ac4aa; }
+  .fa-rel-cancel-btn { padding: 4px 10px; border: 1px solid #3a4048; background: none; color: #7a8e96; font-family: Georgia, serif; font-size: 0.8rem; cursor: pointer; }
+  .fa-rel-cancel-btn:hover { color: #c07070; border-color: #703030; }
+
+  /* Sort bar */
+  .fa-section-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .fa-section-bar-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.14em; color: #5a7078; }
+  .fa-sort-btn { font-family: Georgia, serif; font-size: 0.78rem; padding: 3px 10px; border: 1px solid #2e3f45; background: none; color: #6a7e86; cursor: pointer; letter-spacing: 0.04em; }
+  .fa-sort-btn:hover { border-color: #4a6570; color: #9ab0ba; }
+  .fa-sort-btn.active { border-color: #4a6570; color: #9ab0ba; background: #1f2d30; }
+
+  /* Sort dropdown */
+  .fa-sort-select { font-family: Georgia, serif; font-size: 0.82rem; padding: 3px 8px; border: 1px solid #2e3f45; background: #1f2d30; color: #9ab0ba; cursor: pointer; letter-spacing: 0.04em; }
+  .fa-sort-select:focus { outline: none; border-color: #4a6570; }
+
+  /* Pencil rename button */
+  .fa-rename-btn { background: none; border: none; color: #3a5058; cursor: pointer; font-size: 0.78rem; padding: 2px 5px; line-height: 1; transition: color 0.12s; flex-shrink: 0; opacity: 0; }
+  .fa-header:hover .fa-rename-btn { opacity: 1; }
+  .fa-rename-btn:hover { color: #9ab0ba; }
+
+  /* Bottom panel (subtitle + import/export) */
+  .panel-footer { margin-top: 1.25rem; padding-top: 0.9rem; border-top: 1px solid #2e3f45; display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+  .panel-footer-sep { flex: 1; }
+  .panel-subtitle { font-size: 0.82rem; color: #5a7078; font-style: italic; width: 100%; margin-bottom: 0.3rem; }
+
+  input[type="file"] { display: none; }
+
+  /* ── Obsidian link row ── */
+  .ob-row { padding: 0.5rem 1.25rem; display: flex; gap: 0.75rem; align-items: baseline; border-top: 1px solid #2e3f45; }
+  .ob-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.18em; color: #6a7e86; white-space: nowrap; flex-shrink: 0; }
+  .ob-display { font-size: 0.85rem; color: #7a9aaa; font-style: italic; flex: 1; cursor: pointer; min-height: 1.3em; }
+  .ob-display:empty::before { content: 'Link a note…'; color: #3a5058; }
+  .ob-display:hover { color: #9ab8c4; }
+  .ob-input { background: #1a2c30; border: 1px solid #4a7080; color: #c0d4dc; font-family: Georgia, serif; font-size: 0.85rem; padding: 4px 8px; flex: 1; font-style: italic; }
+  .ob-input:focus { outline: none; border-color: #6a9aaa; }
+  .ob-open-btn { background: none; border: 1px solid #3a5868; color: #6a9aaa; font-family: Georgia, serif; font-size: 0.78rem; padding: 3px 9px; cursor: pointer; letter-spacing: 0.04em; flex-shrink: 0; transition: all 0.12s; }
+  .ob-open-btn:hover { border-color: #8ab8c8; color: #BFDFE9; }
+  .ob-open-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* ════════════════════════════════════════════════════
+     DRIVES TAB
+  ════════════════════════════════════════════════════ */
+  .dr-char-block { background: #1D2D31; border: 1px solid #3a5058; margin-bottom: 0.6rem; }
+  .dr-char-header { padding: 0.55rem 1rem; display: flex; align-items: center; gap: 0.75rem; min-height: 2.4rem; cursor: pointer; user-select: none; }
+  .dr-chevron { background: none; border: none; color: #4a6570; font-size: 0.65rem; padding: 0 2px; flex-shrink: 0; transition: transform 0.15s, color 0.12s; line-height: 1; }
+  .dr-chevron:hover { color: #9ab0ba; }
+  .dr-char-block.expanded .dr-chevron { transform: rotate(90deg); }
+  .dr-char-name { font-size: 0.95rem; color: #e8e4d8; letter-spacing: 0.03em; flex: 1; }
+  .dr-char-name-input { background: #253338; border: 1px solid #5a8070; color: #e8e4d8; font-family: Georgia, serif; font-size: 0.95rem; padding: 3px 7px; flex: 1; letter-spacing: 0.03em; }
+  .dr-char-name-input:focus { outline: none; border-color: #8ac4aa; }
+  .dr-char-count { font-size: 0.72rem; color: #5a7078; flex-shrink: 0; font-style: italic; }
+  .dr-char-block.expanded .dr-char-count { display: none; }
+
+  .dr-body-wrap { display: none; border-top: 1px solid #2e3f45; padding: 0.6rem 1rem 0.75rem; }
+  .dr-char-block.expanded .dr-body-wrap { display: block; }
+
+  .dr-drive-row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid #222f33; }
+  .dr-drive-row:last-of-type { border-bottom: none; }
+  .dr-drive-bullet { color: #4a7060; font-size: 0.75rem; flex-shrink: 0; }
+  .dr-drive-text { font-size: 0.9rem; color: #c0d0d8; flex: 1; cursor: pointer; min-height: 1.2em; font-style: italic; }
+  .dr-drive-text:empty::before { content: 'Click to edit…'; color: #3a5058; }
+  .dr-drive-text:hover { color: #e8e4d8; }
+  .dr-drive-input { background: #1a2c30; border: 1px solid #5a8070; color: #c0d4dc; font-family: Georgia, serif; font-size: 0.9rem; padding: 3px 7px; flex: 1; font-style: italic; }
+  .dr-drive-input:focus { outline: none; border-color: #8ac4aa; }
+  .dr-drive-del { background: none; border: 1px solid transparent; color: #3a5058; cursor: pointer; font-size: 0.72rem; padding: 2px 6px; font-family: Georgia, serif; letter-spacing: 0.04em; flex-shrink: 0; transition: all 0.12s; }
+  .dr-drive-del:hover { color: #c07070; border-color: #703030; }
+
+  .dr-add-drive-btn { margin-top: 0.6rem; background: none; border: 1px dashed #3a5058; color: #5a7870; font-family: Georgia, serif; font-size: 0.8rem; padding: 4px 12px; cursor: pointer; letter-spacing: 0.06em; width: 100%; transition: all 0.15s; }
+  .dr-add-drive-btn:hover { border-color: #5a8070; color: #8ac4aa; }
+  .dr-empty-drives { font-size: 0.82rem; color: #3a5058; font-style: italic; padding: 0.3rem 0 0.5rem; }
+
+  /* Responsive: narrow screens */
+  @media (max-width: 500px) {
+    .fa-pip-summary { flex-direction: column; gap: 3px; align-items: flex-start; }
+    .fa-summary-sep { display: none; }
+    .fa-summary-group { gap: 2px; }
+    .fa-header { align-items: flex-start; padding: 0.5rem 0.75rem; }
+    .fa-header-left { display: flex; flex-direction: column; gap: 0.3rem; }
+  }
+</style>
+</head>
+<body>
+<!-- ── Wildsea Nav ─────────────────────────────────────────── -->
+<style>
+.ws-nav-btn{position:fixed;top:14px;left:14px;z-index:1000;width:36px;height:36px;background:#1D2D31;border:1px solid #3a5058;color:#BFDFE9;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,border-color .14s;-webkit-tap-highlight-color:transparent;}
+.ws-nav-btn:hover{background:#253338;border-color:#BFDFE9;}
+.ws-nav-back{left:58px;font-size:.85rem;text-decoration:none;font-family:Georgia,serif;letter-spacing:.04em;}
+.ws-nav-drawer{position:fixed;top:0;left:0;z-index:999;width:260px;max-width:85vw;height:100%;background:#1D2D31;border-right:1px solid #3a5058;transform:translateX(-100%);transition:transform .22s ease;overflow-y:auto;}
+.ws-nav-drawer.open{transform:translateX(0);}
+.ws-nav-overlay{display:none;position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.45);}
+.ws-nav-overlay.open{display:block;}
+.ws-nav-header{padding:1.1rem 1.25rem .9rem;border-bottom:1px solid #2e3f45;display:flex;align-items:center;justify-content:space-between;}
+.ws-nav-title{font-family:Georgia,serif;font-size:1rem;color:#BFDFE9;letter-spacing:.06em;font-weight:normal;}
+.ws-nav-close{background:none;border:none;color:#5a7078;font-size:1.1rem;cursor:pointer;padding:2px 6px;transition:color .13s;}
+.ws-nav-close:hover{color:#BFDFE9;}
+.ws-nav-section{font-size:.6rem;text-transform:uppercase;letter-spacing:.2em;color:#3a5a68;padding:.9rem 1.25rem .35rem;font-family:Georgia,serif;}
+.ws-nav-link{display:flex;align-items:center;gap:.75rem;padding:.6rem 1.25rem;font-family:Georgia,serif;font-size:.88rem;color:#9ab0ba;text-decoration:none;transition:background .12s,color .12s;letter-spacing:.02em;}
+.ws-nav-link:hover{background:#253338;color:#e8e4d8;}
+.ws-nav-link.current{color:#BFDFE9;background:#1a2c32;}
+.ws-nav-glyph{font-size:.85rem;width:16px;text-align:center;flex-shrink:0;opacity:.7;}
+.ws-nav-spacer{height:1px;background:#2e3f45;margin:.5rem 1.25rem;}
+body{padding-top:64px !important;}
+</style>
+<button class="ws-nav-btn" id="ws-menu-btn" aria-label="Open menu">☰</button>
+<a class="ws-nav-btn ws-nav-back" href="index.html" aria-label="Home">←</a>
+<div class="ws-nav-overlay" id="ws-overlay"></div>
+<nav class="ws-nav-drawer" id="ws-drawer">
+  <div class="ws-nav-header">
+    <span class="ws-nav-title">Wildsea</span>
+    <button class="ws-nav-close" id="ws-close">✕</button>
+  </div>
+  <div class="ws-nav-section">Trackers</div>
+  <a class="ws-nav-link" href="wildsea-tracker-slim v2.html"><span class="ws-nav-glyph">◈</span>Session Tracker</a>
+  <a class="ws-nav-link" href="wildsea-journey-tracker v2.html"><span class="ws-nav-glyph">◇</span>Journey Tracker</a>
+  <a class="ws-nav-link" href="wildsea-character-sheet v3.html"><span class="ws-nav-glyph">▣</span>Character Sheet</a>
+  <div class="ws-nav-spacer"></div>
+  <div class="ws-nav-section">Generators</div>
+  <a class="ws-nav-link" href="wildsea-locations-traders-npcs.html"><span class="ws-nav-glyph">▤</span>Locations</a>
+  <a class="ws-nav-link" href="wildsea-creatures.html"><span class="ws-nav-glyph">◬</span>Creatures</a>
+  <a class="ws-nav-link" href="wildsea-random-items v2.html"><span class="ws-nav-glyph">○</span>Items</a>
+  <a class="ws-nav-link" href="wildsea-relics.html"><span class="ws-nav-glyph">◎</span>Relics</a>
+  <a class="ws-nav-link" href="wildsea-ships.html"><span class="ws-nav-glyph">△</span>Ships</a>
+  <a class="ws-nav-link" href="wildsea-encounters.html"><span class="ws-nav-glyph">▦</span>Encounters</a>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('ws-menu-btn'),
+      drawer=document.getElementById('ws-drawer'),
+      overlay=document.getElementById('ws-overlay'),
+      close=document.getElementById('ws-close');
+  function open(){drawer.classList.add('open');overlay.classList.add('open');}
+  function shut(){drawer.classList.remove('open');overlay.classList.remove('open');}
+  btn.addEventListener('click',open);
+  close.addEventListener('click',shut);
+  overlay.addEventListener('click',shut);
+  var cur=location.pathname.split('/').pop()||'index.html';
+  document.querySelectorAll('.ws-nav-link').forEach(function(a){
+    if(a.getAttribute('href')===cur)a.classList.add('current');
+  });
+})();
+</script>
+<!-- ── /Wildsea Nav ─────────────────────────────────────────── -->
+
+<h1 class="page-title">Wildsea Tracker</h1>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-tracks-btn"   onclick="switchTab('tracks')">Tracks</button>
+  <button class="tab-btn"        id="tab-factions-btn" onclick="switchTab('factions')">Factions</button>
+  <button class="tab-btn"        id="tab-drives-btn"   onclick="switchTab('drives')">Drives</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     TRACKS PANEL
+════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-tracks">
+  <div class="toolbar">
+    <button class="btn add-btn" onclick="trAddTrack()">+ Add Track</button>
+    <span class="flash" id="tr-flash"></span>
+  </div>
+  <div id="tr-list"></div>
+  <div class="panel-footer">
+    <p class="panel-subtitle">Progress tracks for clocks, countdowns, and unfolding events.</p>
+    <button class="btn save-btn" onclick="trExport()">Export Save</button>
+    <button class="btn" onclick="document.getElementById('tr-import-input').click()">Import Save</button>
+    <input type="file" id="tr-import-input" accept=".json" onchange="trImport(event)">
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     FACTIONS PANEL
+════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-factions">
+  <div class="toolbar">
+    <button class="btn add-btn" onclick="faAddFaction()">+ Add Faction</button>
+    <div class="toolbar-sep"></div>
+    <span class="fa-section-bar-label">Sort</span>
+    <select class="fa-sort-select" id="fa-sort-select" onchange="faSetSort(this.value)">
+      <option value="added">Added</option>
+      <option value="name">Name</option>
+      <option value="respect">Respect</option>
+      <option value="fear">Fear</option>
+      <option value="favour">Favour</option>
+    </select>
+    <span class="flash" id="fa-flash"></span>
+  </div>
+  <div id="fa-list"></div>
+  <div class="panel-footer">
+    <p class="panel-subtitle">Reputation, standing, and relations across the wildersea.</p>
+    <button class="btn save-btn" onclick="faExport()">Export Save</button>
+    <button class="btn" onclick="document.getElementById('fa-import-input').click()">Import Save</button>
+    <input type="file" id="fa-import-input" accept=".json" onchange="faImport(event)">
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     DRIVES PANEL
+════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-drives">
+  <div class="toolbar">
+    <button class="btn add-btn" onclick="drAddCharacter()">+ Add Character</button>
+    <span class="flash" id="dr-flash"></span>
+  </div>
+  <div id="dr-list"></div>
+  <div class="panel-footer">
+    <p class="panel-subtitle">Character drives — goals, compulsions, and hungers that push them forward.</p>
+    <button class="btn save-btn" onclick="drExport()">Export Save</button>
+    <button class="btn" onclick="document.getElementById('dr-import-input').click()">Import Save</button>
+    <input type="file" id="dr-import-input" accept=".json" onchange="drImport(event)">
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  TAB SWITCHER
+// ════════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tab-' + name + '-btn').classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+//  SHARED UTILS
+// ════════════════════════════════════════════════════════════
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ── Obsidian link ──
+const OB_VAULT = 'Wildsea v3';
+function obOpen(noteName) {
+  if (!noteName || !noteName.trim()) return;
+  const url = 'obsidian://open?vault=' + encodeURIComponent(OB_VAULT) + '&file=' + encodeURIComponent(noteName.trim());
+  window.open(url, '_blank');
+}
+
+function showFlash(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ════════════════════════════════════════════════════════════
+//  TRACKS
+// ════════════════════════════════════════════════════════════
+const TR_KEY     = 'wildsea_tracks_v1';
+const TR_MIN     = 2;
+const TR_MAX     = 20;
+const TR_DEFAULT = 6;
+
+let trTracks      = [];
+let trEditName    = null;
+let trEditNotes   = null;
+let trEditNote    = null;
+const trExpanded  = new Set();
+
+function trToggle(id) {
+  if (trExpanded.has(id)) { trExpanded.delete(id); } else { trExpanded.add(id); }
+  trRenderCard(id);
+}
+
+function trSave() { try { localStorage.setItem(TR_KEY, JSON.stringify(trTracks)); } catch(e) {} }
+function trLoad() { try { const r = localStorage.getItem(TR_KEY); if (r) { trTracks = JSON.parse(r); trTracks.forEach(t => { if (t.note === undefined) t.note = ''; }); } } catch(e) { trTracks = []; } }
+
+function trExport() {
+  const b = new Blob([JSON.stringify(trTracks, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'wildsea-tracks.json'; a.click();
+  showFlash('tr-flash', 'Saved.');
+}
+function trImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => { try { const d = JSON.parse(ev.target.result); if (Array.isArray(d)) { trTracks = d; trSave(); trRender(); showFlash('tr-flash', 'Imported ' + trTracks.length + ' track' + (trTracks.length !== 1 ? 's' : '') + '.'); } } catch(err) { showFlash('tr-flash', 'Could not read file.'); } };
+  r.readAsText(file); e.target.value = '';
+}
+
+function trAddTrack() {
+  const t = { id: uid(), name: 'New Track', notes: '', note: '', length: TR_DEFAULT, filled: 0, addedAt: Date.now() };
+  trTracks.unshift(t); trSave(); trExpanded.add(t.id); trRender(); trStartEditName(t.id);
+}
+function trDelete(id) { trTracks = trTracks.filter(t => t.id !== id); trSave(); trRender(); }
+function trSetPip(id, v) {
+  const t = trTracks.find(t => t.id === id); if (!t) return;
+  t.filled = (t.filled === v) ? v - 1 : v; trSave(); trRenderCard(id);
+}
+function trSetLength(id, delta) {
+  const t = trTracks.find(t => t.id === id); if (!t) return;
+  t.length = Math.max(TR_MIN, Math.min(TR_MAX, t.length + delta));
+  if (t.filled > t.length) t.filled = t.length;
+  trSave(); trRenderCard(id);
+}
+function trSetName(id, v)  { const t = trTracks.find(t => t.id === id); if (t) { t.name  = v.trim() || 'Unnamed Track'; trSave(); } }
+function trSetNotes(id, v) { const t = trTracks.find(t => t.id === id); if (t) { t.notes = v; trSave(); } }
+function trSetNote(id, v)  { const t = trTracks.find(t => t.id === id); if (t) { t.note  = v.trim(); trSave(); } }
+
+function trRender() {
+  const list = document.getElementById('tr-list');
+  if (trTracks.length === 0) { list.innerHTML = '<div class="empty-state">No tracks yet. Add one to begin.</div>'; return; }
+  list.innerHTML = '';
+  trTracks.forEach(t => { const d = document.createElement('div'); d.id = 'tr-card-' + t.id; list.appendChild(d); trRenderCardInto(t.id, d); });
+}
+function trRenderCard(id) { const d = document.getElementById('tr-card-' + id); if (d) trRenderCardInto(id, d); }
+
+function trRenderCardInto(id, container) {
+  const t = trTracks.find(t => t.id === id); if (!t) return;
+  const enm  = trEditName  === id;
+  const eno  = trEditNotes === id;
+  const enob = trEditNote  === id;
+  const done     = t.filled >= t.length;
+  const expanded = trExpanded.has(id);
+
+  const nameHTML = enm
+    ? `<input class="tr-name-input" id="tr-ni-${id}" type="text" value="${escAttr(t.name)}"
+         onblur="trCommitName('${id}')"
+         onkeydown="if(event.key==='Enter')trCommitName('${id}');if(event.key==='Escape')trCancelName('${id}')">`
+    : `<div class="tr-name-display" onclick="trToggle('${id}')" title="Click to expand/collapse">${esc(t.name)}</div>
+       <button class="fa-rename-btn" onclick="trStartEditName('${id}')" title="Rename">✎</button>`;
+
+  let pips = '';
+  for (let i = 1; i <= t.length; i++) {
+    pips += `<div class="tr-pip${i <= t.filled ? ' filled' : ''}" onclick="trSetPip('${id}',${i})" title="${i}/${t.length}"></div>`;
+  }
+
+  const notesHTML = eno
+    ? `<textarea class="notes-input" id="tr-no-${id}" onblur="trCommitNotes('${id}')" onkeydown="if(event.key==='Escape')trCommitNotes('${id}')">${esc(t.notes)}</textarea>`
+    : `<div class="notes-display" onclick="trStartEditNotes('${id}')">${esc(t.notes)}</div>`;
+
+  const noteVal = t.note || '';
+  const obHTML = enob
+    ? `<input class="ob-input" id="tr-ob-${id}" type="text" value="${escAttr(noteVal)}" placeholder="Note name…"
+         onblur="trCommitNote('${id}')" onkeydown="if(event.key==='Enter')trCommitNote('${id}');if(event.key==='Escape')trCommitNote('${id}')">`
+    : `<div class="ob-display" onclick="trStartEditNote('${id}')">${esc(noteVal)}</div>`;
+
+  let headerPips = '';
+  for (let i = 1; i <= t.length; i++) {
+    headerPips += `<div class="tr-pip${i <= t.filled ? ' filled' : ''}"></div>`;
+  }
+
+  let cls = 'tr-card';
+  if (expanded) cls += ' expanded';
+  if (enm || eno || enob) cls += ' editing';
+  if (done) cls += ' completed';
+  container.className = cls;
+  container.innerHTML = `
+    <div class="tr-header">
+      <button class="fa-chevron" onclick="trToggle('${id}')">▶</button>
+      <div class="tr-header-left">${nameHTML}</div>
+      <div class="tr-header-pips">${headerPips}</div>
+      <button class="icon-btn delete-btn" onclick="trDelete('${id}')">Remove</button>
+    </div>
+    <div class="tr-body-wrap">
+      <div class="tr-pips-row">
+        <div class="tr-pip-track">${pips}</div>
+        <span class="tr-pip-count">${t.filled} / ${t.length}</span>
+        <div class="tr-length-controls">
+          <span class="tr-length-label">Length</span>
+          <button class="tr-len-btn" onclick="trSetLength('${id}',-1)" ${t.length <= TR_MIN ? 'disabled' : ''}>−</button>
+          <button class="tr-len-btn" onclick="trSetLength('${id}',1)"  ${t.length >= TR_MAX ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
+      <div class="tr-notes-row">
+        <span class="notes-label">Notes</span>
+        ${notesHTML}
+      </div>
+      <div class="ob-row">
+        <span class="ob-label">Obsidian</span>
+        ${obHTML}
+        <button class="ob-open-btn" onclick="obOpen('${escAttr(noteVal)}')" ${noteVal ? '' : 'disabled'} title="Open in Obsidian">↗</button>
+      </div>
+    </div>`;
+
+  if (enm)  setTimeout(() => { const el = document.getElementById('tr-ni-'+id);  if(el){el.focus();el.select();} }, 0);
+  if (eno)  setTimeout(() => { const el = document.getElementById('tr-no-'+id);  if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);} }, 0);
+  if (enob) setTimeout(() => { const el = document.getElementById('tr-ob-'+id);  if(el){el.focus();el.select();} }, 0);
+}
+
+function trStartEditName(id)  { trEditName  = id; trRenderCard(id); }
+function trCancelName(id)     { trEditName  = null; trRenderCard(id); }
+function trCommitName(id)     { const el = document.getElementById('tr-ni-'+id); if(el) trSetName(id, el.value); trEditName = null; trRenderCard(id); }
+function trStartEditNotes(id) { trEditNotes = id; trRenderCard(id); }
+function trCommitNotes(id)    { const el = document.getElementById('tr-no-'+id); if(el) trSetNotes(id, el.value); trEditNotes = null; trRenderCard(id); }
+function trStartEditNote(id)  { trEditNote  = id; trRenderCard(id); }
+function trCommitNote(id)     { const el = document.getElementById('tr-ob-'+id); if(el) trSetNote(id, el.value); trEditNote = null; trRenderCard(id); }
+
+// ════════════════════════════════════════════════════════════
+//  FACTIONS
+// ════════════════════════════════════════════════════════════
+const FA_KEY  = 'wildsea_factions_v1';
+const FA_PIPS = 6;
+
+let faFactions    = [];
+let faSortMode    = 'added';
+let faEditName    = null;
+let faEditNotes   = null;
+let faEditBase    = null;
+let faEditLeader  = null;
+let faAddingRel   = null;
+let faEditNote    = null;
+const faExpanded  = new Set();
+
+function faToggle(id) {
+  if (faExpanded.has(id)) { faExpanded.delete(id); } else { faExpanded.add(id); }
+  faRenderCard(id);
+}
+
+function faSave() { try { localStorage.setItem(FA_KEY, JSON.stringify(faFactions)); } catch(e) {} }
+function faLoad() { try { const r = localStorage.getItem(FA_KEY); if (r) { faFactions = JSON.parse(r); faFactions.forEach(f => { if (f.note === undefined) f.note = ''; }); } } catch(e) { faFactions = []; } }
+
+function faExport() {
+  const b = new Blob([JSON.stringify(faFactions, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'wildsea-factions.json'; a.click();
+  showFlash('fa-flash', 'Saved.');
+}
+function faImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => { try { const d = JSON.parse(ev.target.result); if (Array.isArray(d)) { faFactions = d; faSave(); faRender(); showFlash('fa-flash', 'Imported ' + faFactions.length + ' faction' + (faFactions.length !== 1 ? 's' : '') + '.'); } } catch(err) { showFlash('fa-flash', 'Could not read file.'); } };
+  r.readAsText(file); e.target.value = '';
+}
+
+function faAddFaction() {
+  const f = { id: uid(), name: 'New Faction', base: '', leader: '', notes: '', note: '', respect: 0, fear: 0, favour: 0, relations: [], addedAt: Date.now() };
+  faFactions.unshift(f); faSave(); faExpanded.add(f.id); faRender(); faStartEditName(f.id);
+}
+function faDelete(id) {
+  faFactions = faFactions.filter(f => f.id !== id);
+  faFactions.forEach(f => { f.relations = f.relations.filter(r => r.targetId !== id); });
+  faSave(); faRender();
+}
+function faSetPip(id, track, v) {
+  const f = faFactions.find(f => f.id === id); if (!f) return;
+  f[track] = (f[track] === v) ? v - 1 : v; faSave(); faRenderCard(id);
+}
+function faSetName(id, v)   { const f = faFactions.find(f => f.id === id); if (f) { f.name   = v.trim() || 'Unnamed Faction'; faSave(); } }
+function faSetNotes(id, v)  { const f = faFactions.find(f => f.id === id); if (f) { f.notes  = v; faSave(); } }
+function faSetBase(id, v)   { const f = faFactions.find(f => f.id === id); if (f) { f.base   = v.trim(); faSave(); } }
+function faSetLeader(id, v) { const f = faFactions.find(f => f.id === id); if (f) { f.leader = v.trim(); faSave(); } }
+function faSetNote(id, v)   { const f = faFactions.find(f => f.id === id); if (f) { f.note   = v.trim(); faSave(); } }
+function faAddRelation(id, targetId, stance) {
+  const f = faFactions.find(f => f.id === id); if (!f || !targetId || targetId === id) return;
+  f.relations = f.relations.filter(r => r.targetId !== targetId);
+  f.relations.push({ targetId, stance }); faSave();
+}
+function faRemoveRelation(id, targetId) {
+  const f = faFactions.find(f => f.id === id); if (!f) return;
+  f.relations = f.relations.filter(r => r.targetId !== targetId); faSave(); faRenderCard(id);
+}
+
+function faSetSort(mode) {
+  faSortMode = mode;
+  const sel = document.getElementById('fa-sort-select');
+  if (sel) sel.value = mode;
+  faRender();
+}
+function faSorted() {
+  const fs = [...faFactions];
+  if (faSortMode === 'name')    return fs.sort((a,b) => a.name.localeCompare(b.name));
+  if (faSortMode === 'respect') return fs.sort((a,b) => b.respect - a.respect);
+  if (faSortMode === 'fear')    return fs.sort((a,b) => b.fear    - a.fear);
+  if (faSortMode === 'favour')  return fs.sort((a,b) => b.favour  - a.favour);
+  return fs.sort((a,b) => a.addedAt - b.addedAt);
+}
+
+function faRender() {
+  const list = document.getElementById('fa-list');
+  if (faFactions.length === 0) { list.innerHTML = '<div class="empty-state">No factions tracked yet. Add one to begin.</div>'; return; }
+  list.innerHTML = '';
+  faSorted().forEach(f => { const d = document.createElement('div'); d.id = 'fa-card-' + f.id; list.appendChild(d); faRenderCardInto(f.id, d); });
+}
+function faRenderCard(id) { const d = document.getElementById('fa-card-' + id); if (d) faRenderCardInto(id, d); }
+
+function faRenderCardInto(id, container) {
+  const f = faFactions.find(f => f.id === id); if (!f) return;
+  const enm  = faEditName   === id;
+  const eno  = faEditNotes  === id;
+  const enb  = faEditBase   === id;
+  const enl  = faEditLeader === id;
+  const enar = faAddingRel  === id;
+  const enob = faEditNote   === id;
+  const expanded = faExpanded.has(id);
+
+  const nameHTML = enm
+    ? `<input class="fa-name-input" id="fa-ni-${id}" type="text" value="${escAttr(f.name)}"
+         onblur="faCommitName('${id}')"
+         onkeydown="if(event.key==='Enter')faCommitName('${id}');if(event.key==='Escape')faCancelName('${id}')">`
+    : `<div class="fa-name-display" onclick="faToggle('${id}')" title="Click to expand/collapse">${esc(f.name)}</div>
+       <button class="fa-rename-btn" onclick="faStartEditName('${id}')" title="Rename">✎</button>`;
+
+  const baseHTML = enb
+    ? `<input class="fa-meta-input" id="fa-bi-${id}" type="text" value="${escAttr(f.base||'')}"
+         onblur="faCommitBase('${id}')" onkeydown="if(event.key==='Enter'||event.key==='Escape')faCommitBase('${id}')">`
+    : `<span class="fa-meta-value" onclick="faStartEditBase('${id}')">${esc(f.base)}</span>`;
+
+  const leaderHTML = enl
+    ? `<input class="fa-meta-input" id="fa-li-${id}" type="text" value="${escAttr(f.leader||'')}"
+         onblur="faCommitLeader('${id}')" onkeydown="if(event.key==='Enter'||event.key==='Escape')faCommitLeader('${id}')">`
+    : `<span class="fa-meta-value" onclick="faStartEditLeader('${id}')">${esc(f.leader)}</span>`;
+
+  const notesHTML = eno
+    ? `<textarea class="fa-notes-input" id="fa-no-${id}" onblur="faCommitNotes('${id}')" onkeydown="if(event.key==='Escape')faCommitNotes('${id}')">${esc(f.notes)}</textarea>`
+    : `<div class="notes-display" onclick="faStartEditNotes('${id}')">${esc(f.notes)}</div>`;
+
+  const noteVal = f.note || '';
+  const obHTML = enob
+    ? `<input class="ob-input" id="fa-ob-${id}" type="text" value="${escAttr(noteVal)}" placeholder="Note name…"
+         onblur="faCommitNote('${id}')" onkeydown="if(event.key==='Enter')faCommitNote('${id}');if(event.key==='Escape')faCommitNote('${id}')">`
+    : `<div class="ob-display" onclick="faStartEditNote('${id}')">${esc(noteVal)}</div>`;
+
+  // Collapsed pip summary — small coloured dots per track
+  const tnames = ['respect','fear','favour'];
+  const summaryGroups = tnames.map((t, ti) => {
+    let dots = '';
+    for (let i = 1; i <= FA_PIPS; i++) {
+      dots += `<div class="fa-summary-dot ${t}${i <= f[t] ? ' filled' : ''}"></div>`;
+    }
+    return `${ti > 0 ? '<div class="fa-summary-sep"></div>' : ''}<div class="fa-summary-group">${dots}</div>`;
+  }).join('');
+
+  const trackCols = tnames.map(t => {
+    let pips = '';
+    for (let i = 1; i <= FA_PIPS; i++) {
+      pips += `<div class="fa-pip ${t}${i <= f[t] ? ' filled' : ''}" onclick="faSetPip('${id}','${t}',${i})"></div>`;
+    }
+    return `<div class="fa-track-col">
+      <span class="fa-track-label ${t}-l">${cap(t)}</span>
+      <div class="fa-pip-track">${pips}<span class="fa-pip-value">${f[t]}/${FA_PIPS}</span></div>
+    </div>`;
+  }).join('');
+
+  const relTags = f.relations.map(r => {
+    const tgt = faFactions.find(x => x.id === r.targetId);
+    const nm  = tgt ? esc(tgt.name) : '<i>unknown</i>';
+    return `<div class="fa-relation-tag ${r.stance}">
+      <span class="rel-name">${nm}</span>
+      <span class="rel-stance">${r.stance}</span>
+      <button class="fa-rel-remove" onclick="faRemoveRelation('${id}','${r.targetId}')">✕</button>
+    </div>`;
+  }).join('');
+
+  const existingRels = new Set(f.relations.map(r => r.targetId));
+  const candidates   = faFactions.filter(x => x.id !== id && !existingRels.has(x.id));
+  const candOpts     = candidates.map(x => `<option value="${x.id}">${escAttr(x.name)}</option>`).join('');
+  const stanceOpts   = ['allied','neutral','wary','hostile','indebted'].map(s => `<option value="${s}">${cap(s)}</option>`).join('');
+
+  const addRelForm = enar && candidates.length > 0
+    ? `<div class="fa-rel-add-form">
+        <select class="fa-rel-select" id="fa-rt-${id}">${candOpts}</select>
+        <select class="fa-rel-select" id="fa-rs-${id}">${stanceOpts}</select>
+        <button class="fa-rel-confirm-btn" onclick="faConfirmRelation('${id}')">Add</button>
+        <button class="fa-rel-cancel-btn"  onclick="faCancelRelation('${id}')">Cancel</button>
+      </div>` : '';
+
+  const addRelBtn = !enar && candidates.length > 0
+    ? `<button class="fa-add-relation-btn" onclick="faStartAddRelation('${id}')">+ relation</button>` : '';
+
+  container.className = 'fa-card' + (expanded ? ' expanded' : '') + (enm || eno || enb || enl || enob ? ' editing' : '');
+  container.innerHTML = `
+    <div class="fa-header">
+      <button class="fa-chevron" onclick="faToggle('${id}')">▶</button>
+      <div class="fa-header-left">
+        ${nameHTML}
+      </div>
+      <div class="fa-pip-summary">${summaryGroups}</div>
+      <div class="fa-header-right">
+        <button class="icon-btn delete-btn" onclick="faDelete('${id}')">Remove</button>
+      </div>
+    </div>
+    <div class="fa-body-wrap">
+      <div class="fa-meta-row">
+        <div class="fa-meta-cell"><span class="fa-meta-label">Based at</span>${baseHTML}</div>
+        <div class="fa-meta-cell"><span class="fa-meta-label">Leader</span>${leaderHTML}</div>
+      </div>
+      <div class="fa-body">${trackCols}</div>
+      <div class="fa-notes-row">
+        <span class="notes-label">Notes</span>
+        ${notesHTML}
+      </div>
+      <div class="ob-row">
+        <span class="ob-label">Obsidian</span>
+        ${obHTML}
+        <button class="ob-open-btn" onclick="obOpen('${escAttr(noteVal)}')" ${noteVal ? '' : 'disabled'} title="Open in Obsidian">↗</button>
+      </div>
+      <div class="fa-relations-row">
+        <div class="fa-relations-header">
+          <span class="fa-relations-label">Relations</span>
+          ${addRelBtn}
+        </div>
+        <div class="fa-relations-list">${relTags}</div>
+        ${addRelForm}
+      </div>
+    </div>`;
+
+  if (enm)  setTimeout(() => { const el = document.getElementById('fa-ni-'+id); if(el){el.focus();el.select();} }, 0);
+  if (eno)  setTimeout(() => { const el = document.getElementById('fa-no-'+id); if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);} }, 0);
+  if (enb)  setTimeout(() => { const el = document.getElementById('fa-bi-'+id); if(el){el.focus();el.select();} }, 0);
+  if (enl)  setTimeout(() => { const el = document.getElementById('fa-li-'+id); if(el){el.focus();el.select();} }, 0);
+  if (enob) setTimeout(() => { const el = document.getElementById('fa-ob-'+id); if(el){el.focus();el.select();} }, 0);
+}
+
+function faStartEditName(id)  { faEditName   = id; faRenderCard(id); }
+function faCancelName(id)     { faEditName   = null; faRenderCard(id); }
+function faCommitName(id)     { const el = document.getElementById('fa-ni-'+id); if(el) faSetName(id, el.value); faEditName = null; faRender(); }
+function faStartEditNotes(id) { faEditNotes  = id; faRenderCard(id); }
+function faCommitNotes(id)    { const el = document.getElementById('fa-no-'+id); if(el) faSetNotes(id, el.value); faEditNotes = null; faRenderCard(id); }
+function faStartEditBase(id)  { faEditBase   = id; faRenderCard(id); }
+function faCommitBase(id)     { const el = document.getElementById('fa-bi-'+id); if(el) faSetBase(id, el.value); faEditBase = null; faRenderCard(id); }
+function faStartEditLeader(id){ faEditLeader = id; faRenderCard(id); }
+function faCommitLeader(id)   { const el = document.getElementById('fa-li-'+id); if(el) faSetLeader(id, el.value); faEditLeader = null; faRenderCard(id); }
+function faStartEditNote(id)  { faEditNote   = id; faRenderCard(id); }
+function faCommitNote(id)     { const el = document.getElementById('fa-ob-'+id); if(el) faSetNote(id, el.value); faEditNote = null; faRenderCard(id); }
+function faStartAddRelation(id){ faAddingRel = id; faRenderCard(id); }
+function faCancelRelation(id)  { faAddingRel = null; faRenderCard(id); }
+function faConfirmRelation(id) {
+  const tEl = document.getElementById('fa-rt-'+id);
+  const sEl = document.getElementById('fa-rs-'+id);
+  if (!tEl || !sEl) return;
+  faAddRelation(id, tEl.value, sEl.value);
+  faAddingRel = null; faRenderCard(id);
+}
+
+// ════════════════════════════════════════════════════════════
+//  DRIVES
+// ════════════════════════════════════════════════════════════
+const DR_KEY = 'wildsea_drives_v1';
+
+let drChars     = [];
+let drEditName  = null;   // char id being renamed
+let drEditDrive = null;   // { charId, driveId } being edited
+const drExpanded = new Set();
+
+function drSave() { try { localStorage.setItem(DR_KEY, JSON.stringify(drChars)); } catch(e) {} }
+function drLoad() { try { const r = localStorage.getItem(DR_KEY); if (r) drChars = JSON.parse(r); } catch(e) { drChars = []; } }
+
+function drExport() {
+  const b = new Blob([JSON.stringify(drChars, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'wildsea-drives.json'; a.click();
+  showFlash('dr-flash', 'Saved.');
+}
+function drImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (Array.isArray(d)) { drChars = d; drSave(); drRender(); showFlash('dr-flash', 'Imported ' + drChars.length + ' character' + (drChars.length !== 1 ? 's' : '') + '.'); }
+    } catch(err) { showFlash('dr-flash', 'Could not read file.'); }
+  };
+  r.readAsText(file); e.target.value = '';
+}
+
+function drAddCharacter() {
+  const c = { id: uid(), name: 'New Character', drives: [] };
+  drChars.unshift(c); drSave(); drExpanded.add(c.id); drRender(); drStartEditName(c.id);
+}
+function drDeleteChar(id) { drChars = drChars.filter(c => c.id !== id); drExpanded.delete(id); drSave(); drRender(); }
+
+function drToggle(id) {
+  if (drExpanded.has(id)) { drExpanded.delete(id); } else { drExpanded.add(id); }
+  drRenderCard(id);
+}
+
+function drAddDrive(charId) {
+  const c = drChars.find(c => c.id === charId); if (!c) return;
+  const d = { id: uid(), text: '' };
+  c.drives.push(d); drSave();
+  drEditDrive = { charId, driveId: d.id };
+  drRenderCard(charId);
+}
+function drDeleteDrive(charId, driveId) {
+  const c = drChars.find(c => c.id === charId); if (!c) return;
+  c.drives = c.drives.filter(d => d.id !== driveId);
+  if (drEditDrive && drEditDrive.driveId === driveId) drEditDrive = null;
+  drSave(); drRenderCard(charId);
+}
+function drSetDriveText(charId, driveId, v) {
+  const c = drChars.find(c => c.id === charId); if (!c) return;
+  const d = c.drives.find(d => d.id === driveId); if (!d) return;
+  d.text = v.trim(); drSave();
+}
+function drSetName(charId, v) {
+  const c = drChars.find(c => c.id === charId); if (!c) return;
+  c.name = v.trim() || 'Unnamed Character'; drSave();
+}
+
+function drStartEditName(id)  { drEditName = id; drRenderCard(id); setTimeout(() => { const el = document.getElementById('dr-ni-'+id); if(el){el.focus();el.select();} }, 0); }
+function drCommitName(id)     { const el = document.getElementById('dr-ni-'+id); if(el) drSetName(id, el.value); drEditName = null; drRender(); }
+function drStartEditDrive(charId, driveId) { drEditDrive = { charId, driveId }; drRenderCard(charId); setTimeout(() => { const el = document.getElementById('dr-di-'+driveId); if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);} }, 0); }
+function drCommitDrive(charId, driveId)    { const el = document.getElementById('dr-di-'+driveId); if(el) drSetDriveText(charId, driveId, el.value); drEditDrive = null; drRenderCard(charId); }
+
+function drRender() {
+  const list = document.getElementById('dr-list');
+  if (drChars.length === 0) { list.innerHTML = '<div class="empty-state">No characters yet. Add one to begin.</div>'; return; }
+  list.innerHTML = '';
+  drChars.forEach(c => { const d = document.createElement('div'); d.id = 'dr-card-' + c.id; list.appendChild(d); drRenderCardInto(c.id, d); });
+}
+function drRenderCard(id) { const d = document.getElementById('dr-card-' + id); if (d) drRenderCardInto(id, d); }
+
+function drRenderCardInto(id, container) {
+  const c = drChars.find(c => c.id === id); if (!c) return;
+  const expanded = drExpanded.has(id);
+  const enm = drEditName === id;
+
+  const nameHTML = enm
+    ? `<input class="dr-char-name-input" id="dr-ni-${id}" type="text" value="${escAttr(c.name)}"
+         onblur="drCommitName('${id}')"
+         onkeydown="if(event.key==='Enter')drCommitName('${id}');if(event.key==='Escape'){drEditName=null;drRenderCard('${id}')}">`
+    : `<span class="dr-char-name" onclick="drStartEditName('${id}')" title="Click to rename">${esc(c.name)}</span>`;
+
+  const drivesHTML = c.drives.length === 0
+    ? '<div class="dr-empty-drives">No drives recorded.</div>'
+    : c.drives.map(d => {
+        const editing = drEditDrive && drEditDrive.charId === id && drEditDrive.driveId === d.id;
+        const textPart = editing
+          ? `<input class="dr-drive-input" id="dr-di-${d.id}" type="text" value="${escAttr(d.text)}" placeholder="Describe this drive…"
+               onblur="drCommitDrive('${id}','${d.id}')"
+               onkeydown="if(event.key==='Enter')drCommitDrive('${id}','${d.id}');if(event.key==='Escape')drCommitDrive('${id}','${d.id}')">`
+          : `<span class="dr-drive-text" onclick="drStartEditDrive('${id}','${d.id}')">${esc(d.text)}</span>`;
+        return `<div class="dr-drive-row">
+          <span class="dr-drive-bullet">◆</span>
+          ${textPart}
+          <button class="dr-drive-del" onclick="drDeleteDrive('${id}','${d.id}')">Remove</button>
+        </div>`;
+      }).join('');
+
+  container.className = 'dr-char-block' + (expanded ? ' expanded' : '');
+  container.innerHTML = `
+    <div class="dr-char-header" onclick="drToggle('${id}')">
+      <button class="dr-chevron" tabindex="-1">▶</button>
+      ${nameHTML}
+      <span class="dr-char-count">${c.drives.length} drive${c.drives.length !== 1 ? 's' : ''}</span>
+      <button class="icon-btn delete-btn" onclick="event.stopPropagation();drDeleteChar('${id}')">Remove</button>
+    </div>
+    <div class="dr-body-wrap">
+      ${drivesHTML}
+      <button class="dr-add-drive-btn" onclick="drAddDrive('${id}')">+ Add Drive</button>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+trLoad(); trRender();
+faLoad(); faRender();
+drLoad(); drRender();
+</script>
+<p class="page-footer">Data saves automatically to your browser.</p>
+</body>
+</html>
