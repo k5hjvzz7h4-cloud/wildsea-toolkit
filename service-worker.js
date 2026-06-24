@@ -10,13 +10,13 @@ const PRECACHE_URLS = [
   '/wildsea-toolkit/icon-512.png',
   '/wildsea-toolkit/wildsea-locations-traders-npcs.html',
   '/wildsea-toolkit/wildsea-creatures.html',
-  '/wildsea-toolkit/wildsea-random-items_v2.html',
+  '/wildsea-toolkit/wildsea-random-items v2.html',
   '/wildsea-toolkit/wildsea-relics.html',
   '/wildsea-toolkit/wildsea-ships.html',
   '/wildsea-toolkit/wildsea-encounters.html',
-  '/wildsea-toolkit/wildsea-tracker-slim_v2.html',
-  '/wildsea-toolkit/wildsea-journey-tracker_v2.html',
-  '/wildsea-toolkit/wildsea-character-sheet_v3.html',
+  '/wildsea-toolkit/wildsea-tracker-slim v2.html',
+  '/wildsea-toolkit/wildsea-journey-tracker v2.html',
+  '/wildsea-toolkit/wildsea-character-sheet v3.html',
 ];
 
 // ── Install: cache everything ──
