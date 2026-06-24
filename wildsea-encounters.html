@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wildsea Encounter Tables</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #172225; color: #e8e4d8; max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.6; }
+  h1 { font-size: 1.8rem; font-weight: normal; letter-spacing: 0.05em; color: #BFDFE9; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #7a8e96; margin-bottom: 1.5rem; font-style: italic; }
+
+  /* Two-roll UI */
+  .roll-interface { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.75rem; }
+  .roll-panel { background: #1D2D31; border: 1px solid #3a5058; padding: 1rem 1.25rem; }
+  .roll-panel h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #6a7e86; font-weight: normal; margin-bottom: 0.75rem; }
+  .dice-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .die-btn { width: 40px; height: 40px; border: 1px solid #3a5058; background: #253338; color: #9ab0ba; font-family: Georgia, serif; font-size: 1rem; cursor: pointer; transition: all 0.12s; }
+  .die-btn:hover { border-color: #BFDFE9; color: #BFDFE9; background: #2a3d44; }
+  .die-btn.active-watch { border-color: #889eaa; color: #e8e4d8; background: #2a3d44; }
+  .die-btn.active-peace { border-color: #4a6a30; color: #7a9a50; background: #1e2818; }
+  .die-btn.active-safe { border-color: #4a6a30; color: #7a9a50; background: #1e2818; }
+  .die-btn.active-mild { border-color: #3a5a8a; color: #6a8aba; background: #1a2438; }
+  .die-btn.active-haz { border-color: #7a4a2a; color: #b47a50; background: #2a2018; }
+  .roll-label { font-size: 0.8rem; color: #6a7e86; margin-top: 0.6rem; font-style: italic; min-height: 1.2em; }
+
+  /* State display */
+  .state-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; padding: 0.75rem 1rem; background: #1D2D31; border: 1px solid #2e3f45; font-size: 0.9rem; flex-wrap: wrap; }
+  .state-watch { color: #889eaa; }
+  .state-watch.peace { color: #7a9a50; }
+  .state-threat { }
+  .state-threat.safe { color: #7a9a50; }
+  .state-threat.mild { color: #6a8aba; }
+  .state-threat.haz { color: #b47a50; }
+  .state-divider { color: #3a5058; }
+  .state-count { color: #6a7e86; font-size: 0.8rem; margin-left: auto; }
+
+  /* Draw button */
+  .draw-btn { padding: 9px 26px; border: 1px solid #4a6570; background: #253338; color: #BFDFE9; font-family: Georgia, serif; font-size: 0.95rem; cursor: pointer; letter-spacing: 0.06em; transition: all 0.15s; display: block; margin-bottom: 1.5rem; }
+  .draw-btn:hover:not(:disabled) { background: #2a3d44; border-color: #BFDFE9; color: #BFDFE9; }
+  .draw-btn:active:not(:disabled) { transform: scale(0.97); }
+  .draw-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* Multi draw */
+  .multi-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+  .multi-row select { font-size: 0.9rem; padding: 6px 10px; border: 1px solid #3a5058; background: #1D2D31; color: #9ab0ba; font-family: Georgia, serif; cursor: pointer; }
+
+  /* Result */
+  .result-card { background: #1D2D31; border: 1px solid #3a5058; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; min-height: 72px; }
+  .result-card.safe-card { border-color: #4a6a30; }
+  .result-card.mild-card { border-color: #3a5a8a; }
+  .result-card.haz-card { border-color: #7a4a2a; }
+  .result-meta { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; display: flex; gap: 12px; }
+  .meta-watch { color: #889eaa; }
+  .meta-watch.peace { color: #7a9a50; }
+  .meta-threat.safe { color: #7a9a50; }
+  .meta-threat.mild { color: #6a8aba; }
+  .meta-threat.haz { color: #b47a50; }
+  .result-text { font-size: 1rem; color: #e8e4d8; line-height: 1.65; }
+  .result-empty { color: #5a7078; font-style: italic; }
+  .multi-results { display: flex; flex-direction: column; gap: 10px; }
+  .multi-item { background: #253338; border: 1px solid #2e3f45; padding: 0.85rem 1.1rem; line-height: 1.6; font-size: 0.975rem; }
+
+  /* Full table */
+  .toggle-link { font-size: 0.82rem; color: #5a7078; cursor: pointer; text-decoration: underline; font-style: italic; margin-bottom: 1rem; display: inline-block; }
+  .toggle-link:hover { color: #BFDFE9; }
+  .full-table-wrap { margin-top: 0.5rem; }
+  .full-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .full-table th { text-align: left; padding: 7px 12px; border-bottom: 1px solid #2e3f45; font-weight: normal; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6a7e86; }
+  .full-table th.safe-h { color: #7a9a50; }
+  .full-table th.mild-h { color: #6a8aba; }
+  .full-table th.haz-h { color: #b47a50; }
+  .full-table td { padding: 5px 12px; border-bottom: 1px solid #2e3f45; color: #9ab0ba; vertical-align: top; line-height: 1.5; }
+  .full-table tr:last-child td { border-bottom: none; }
+  .full-table tr:hover td { background: #253338; color: #e8e4d8; }
+  .table-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  /* Footer */
+  .page-footer { padding: 0.5rem 0 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #5a7078; font-style: italic; }
+
+  /* Fade-in */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 700px) { .table-grid { grid-template-columns: 1fr; } .roll-interface { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<!-- ── Wildsea Nav ─────────────────────────────────────────── -->
+<style>
+.ws-nav-btn{position:fixed;top:14px;left:14px;z-index:1000;width:36px;height:36px;background:#1D2D31;border:1px solid #3a5058;color:#BFDFE9;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,border-color .14s;-webkit-tap-highlight-color:transparent;}
+.ws-nav-btn:hover{background:#253338;border-color:#BFDFE9;}
+.ws-nav-back{left:58px;font-size:.85rem;text-decoration:none;font-family:Georgia,serif;letter-spacing:.04em;}
+.ws-nav-drawer{position:fixed;top:0;left:0;z-index:999;width:260px;max-width:85vw;height:100%;background:#1D2D31;border-right:1px solid #3a5058;transform:translateX(-100%);transition:transform .22s ease;overflow-y:auto;}
+.ws-nav-drawer.open{transform:translateX(0);}
+.ws-nav-overlay{display:none;position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.45);}
+.ws-nav-overlay.open{display:block;}
+.ws-nav-header{padding:1.1rem 1.25rem .9rem;border-bottom:1px solid #2e3f45;display:flex;align-items:center;justify-content:space-between;}
+.ws-nav-title{font-family:Georgia,serif;font-size:1rem;color:#BFDFE9;letter-spacing:.06em;font-weight:normal;}
+.ws-nav-close{background:none;border:none;color:#5a7078;font-size:1.1rem;cursor:pointer;padding:2px 6px;transition:color .13s;}
+.ws-nav-close:hover{color:#BFDFE9;}
+.ws-nav-section{font-size:.6rem;text-transform:uppercase;letter-spacing:.2em;color:#3a5a68;padding:.9rem 1.25rem .35rem;font-family:Georgia,serif;}
+.ws-nav-link{display:flex;align-items:center;gap:.75rem;padding:.6rem 1.25rem;font-family:Georgia,serif;font-size:.88rem;color:#9ab0ba;text-decoration:none;transition:background .12s,color .12s;letter-spacing:.02em;}
+.ws-nav-link:hover{background:#253338;color:#e8e4d8;}
+.ws-nav-link.current{color:#BFDFE9;background:#1a2c32;}
+.ws-nav-glyph{font-size:.85rem;width:16px;text-align:center;flex-shrink:0;opacity:.7;}
+.ws-nav-spacer{height:1px;background:#2e3f45;margin:.5rem 1.25rem;}
+body{padding-top:64px !important;}
+</style>
+<button class="ws-nav-btn" id="ws-menu-btn" aria-label="Open menu">☰</button>
+<a class="ws-nav-btn ws-nav-back" href="index.html" aria-label="Home">←</a>
+<div class="ws-nav-overlay" id="ws-overlay"></div>
+<nav class="ws-nav-drawer" id="ws-drawer">
+  <div class="ws-nav-header">
+    <span class="ws-nav-title">Wildsea</span>
+    <button class="ws-nav-close" id="ws-close">✕</button>
+  </div>
+  <div class="ws-nav-section">Trackers</div>
+  <a class="ws-nav-link" href="wildsea-tracker-slim.html"><span class="ws-nav-glyph">◈</span>Session Tracker</a>
+  <a class="ws-nav-link" href="wildsea-journey-tracker.html"><span class="ws-nav-glyph">◇</span>Journey Tracker</a>
+  <a class="ws-nav-link" href="wildsea-character-sheet.html"><span class="ws-nav-glyph">▣</span>Character Sheet</a>
+  <div class="ws-nav-spacer"></div>
+  <div class="ws-nav-section">Generators</div>
+  <a class="ws-nav-link" href="wildsea-locations-traders-npcs.html"><span class="ws-nav-glyph">▤</span>Locations</a>
+  <a class="ws-nav-link" href="wildsea-creatures.html"><span class="ws-nav-glyph">◬</span>Creatures</a>
+  <a class="ws-nav-link" href="wildsea-random-items.html"><span class="ws-nav-glyph">○</span>Items</a>
+  <a class="ws-nav-link" href="wildsea-relics.html"><span class="ws-nav-glyph">◎</span>Relics</a>
+  <a class="ws-nav-link" href="wildsea-ships.html"><span class="ws-nav-glyph">△</span>Ships</a>
+  <a class="ws-nav-link" href="wildsea-encounters.html"><span class="ws-nav-glyph">▦</span>Encounters</a>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('ws-menu-btn'),
+      drawer=document.getElementById('ws-drawer'),
+      overlay=document.getElementById('ws-overlay'),
+      close=document.getElementById('ws-close');
+  function open(){drawer.classList.add('open');overlay.classList.add('open');}
+  function shut(){drawer.classList.remove('open');overlay.classList.remove('open');}
+  btn.addEventListener('click',open);
+  close.addEventListener('click',shut);
+  overlay.addEventListener('click',shut);
+  var cur=location.pathname.split('/').pop()||'index.html';
+  document.querySelectorAll('.ws-nav-link').forEach(function(a){
+    if(a.getAttribute('href')===cur)a.classList.add('current');
+  });
+})();
+</script>
+<!-- ── /Wildsea Nav ─────────────────────────────────────────── -->
+
+<h1>Wildsea Encounter Tables</h1>
+<p class="subtitle">Peace · Order · Nature &nbsp;×&nbsp; Safe · Mild Danger · Hazardous</p>
+
+<div class="roll-interface">
+  <div class="roll-panel">
+    <h3>Watch Roll — player rolls d6</h3>
+    <div class="dice-row">
+      <button class="die-btn" id="w6" onclick="setWatch(6)">6</button>
+      <button class="die-btn" id="w5" onclick="setWatch(5)">5</button>
+      <button class="die-btn" id="w4" onclick="setWatch(4)">4</button>
+      <button class="die-btn" id="w3" onclick="setWatch(3)">3</button>
+      <button class="die-btn" id="w2" onclick="setWatch(2)">2</button>
+      <button class="die-btn" id="w1" onclick="setWatch(1)">1</button>
+    </div>
+    <div class="roll-label" id="watch-label">6 = Peace &nbsp;·&nbsp; 4–5 = Order &nbsp;·&nbsp; 1–3 = Nature</div>
+  </div>
+  <div class="roll-panel">
+    <h3>Threat Roll — Firefly rolls d6</h3>
+    <div class="dice-row">
+      <button class="die-btn" id="t6" onclick="setThreat(6)">6</button>
+      <button class="die-btn" id="t5" onclick="setThreat(5)">5</button>
+      <button class="die-btn" id="t4" onclick="setThreat(4)">4</button>
+      <button class="die-btn" id="t3" onclick="setThreat(3)">3</button>
+      <button class="die-btn" id="t2" onclick="setThreat(2)">2</button>
+      <button class="die-btn" id="t1" onclick="setThreat(1)">1</button>
+    </div>
+    <div class="roll-label" id="threat-label">6 = Safe &nbsp;·&nbsp; 4–5 = Mild Danger &nbsp;·&nbsp; 1–3 = Hazardous</div>
+  </div>
+</div>
+
+<div class="state-bar" id="state-bar">
+  <span style="color:#555;font-style:italic;">Set both rolls above, then draw an encounter.</span>
+</div>
+
+<div class="multi-row">
+  <button class="draw-btn" id="draw-btn" onclick="drawEncounter()" disabled>Draw encounter</button>
+  <select id="multi-count">
+    <option value="1" selected>1 result</option>
+    <option value="3">3 results</option>
+    <option value="5">5 results</option>
+  </select>
+  <button class="draw-btn" id="multi-btn" onclick="drawMulti()" disabled style="margin-bottom:0">Draw multiple</button>
+</div>
+
+<div id="result-area" class="result-card"><span class="result-empty">Set both dice above to begin.</span></div>
+
+<div style="margin-top:1.5rem">
+  <span class="toggle-link" onclick="toggleFullTable()">Show full tables</span>
+  <div id="full-table-area" style="display:none" class="full-table-wrap">
+    <div class="table-grid" id="table-grid"></div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>The Wildsea · Felix Isaacs · Mythworks</span>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+// Structure: tables[watchType][threatLevel] = [array of strings]
+// watchType: peace | order | nature
+// threatLevel: safe (20) | mild (40) | haz (60)
+
+const tables = {
+
+// ════════════════════════════════════════════════════════════════════════════
+// PEACE  (watch roll = 6)
+// Nothing spotted — time, rest, crew, reflection, strangeness
+// ════════════════════════════════════════════════════════════════════════════
+peace: {
+
+safe: [
+  "The watch passes without incident. A long, quiet stretch — perfect for tending to personal gear, mending silk, or sharpening blades.",
+  "Hours of smooth sailing. A crewmember takes the time to teach another something they've been asking to learn. The lesson is punctuated only by the canopy's quiet rustling.",
+  "Flat calm and good visibility. A good stretch to work on something left unfinished — a half-written letter, a carving started last port, a mechanism waiting for a steady hand.",
+  "Smooth progress through open canopy. The undercrew handle routine maintenance without being asked. Rest properly. The waves can wait.",
+  "The light is unusually good for this part of the sea. Someone takes out a sketchbook and begins drawing the view. It might be the start of something worth keeping.",
+  "Nothing stirs. The engine runs clean, the bite throws up a pleasant spray of leaves, and every horizon is clear. Take the time to breathe.",
+  "A warm, still watch. The canopy below is barely moving — the usual slow churn quieted, almost peaceful. Someone finds themselves thinking of somewhere they haven't been in a long time.",
+  "A crewmember tends to a minor injury they'd been ignoring. Small attention paid. A small problem solved. The quiet moments matter.",
+  "The watch is calm and the light is flat. The cook takes the opportunity to prepare something with actual effort — real seasoning, slow heat, a meal worth sitting down to.",
+  "Nothing of note. The undercrew manage the deck without needing guidance. Take a montage — rest, repair, reflect. The sea will still be there.",
+  "A drift of harmless spores rises out of the canopy and passes through the ship — leaving a faint shimmer on every surface and an inexplicably good mood in its wake.",
+  "The canopy below produces a brief bloom of synchronised flowers during the watch. Thousands of them, opening together, then closing. Gone before anyone can explain it.",
+  "The watch is calm but strange in quality — the wrong birds, the wrong light, a smell without a source. Nothing is wrong. It just feels briefly like somewhere else.",
+  "A school of canopy fish surfaces alongside the ship for a few minutes — silvery, moving in formation — then vanishes back into the thrash. A good omen, or so tradition holds.",
+  "A brief, perfect clearing in the sky fills the entire horizon. No cloud, no haze. Everyone not asleep comes on deck to look at it. It doesn't last, but it was real.",
+  "The canopy parts briefly ahead, offering a view further than usual — long rolling green waves, a distant glint that might be a port, might just be light on leaves.",
+  "An extraordinary silence descends during the watch. Even the engine seems to run quieter. The canopy does not move. It lasts perhaps an hour. Then it ends, and nothing was wrong.",
+  "Bioluminescent spores rise out of the canopy below in the small hours, drifting past the hull, giving the whole ship a soft blue-green glow for an hour. Deeply beautiful.",
+  "The temperature drops and the air sharpens — clean, cold, the edge of a different season. Briefly wonderful. It doesn't last, but for a few minutes it was perfect.",
+  "Overnight, bioluminescent insects have settled along the rigging. They leave by dawn, but for now the ship glows softly and nobody wants to disturb them.",
+],
+
+mild: [
+  "A meeting called by one of the crew during the quiet stretch — nothing urgent, just a feeling that the group should talk. Information shared, plans half-formed, a small argument properly resolved.",
+  "An older crewmember gathers anyone who'll listen and tells a tall tale. Absurd. Almost certainly exaggerated. Somehow instructive. A crewmate gains a whisper.",
+  "An argument that's been simmering for two watches surfaces properly and is dealt with before it can damage something more important than pride.",
+  "The undercrew request an audience with the officers — not a complaint, more a question about where exactly they're all going and why. Worth answering honestly.",
+  "A crewmember you haven't spoken to in several watches finds a moment in the quiet to say something they've been carrying since the last port.",
+  "One of the undercrew has quietly excelled at something today — held the line, patched the hull quickly, handled a difficult passenger. Worth noticing.",
+  "Someone pulls out a game — cards, bone tiles, a board from a previous port — and the watch becomes a competition. Spirited. Revealing.",
+  "A junior undercrew member admits to being frightened — not of anything specific, just of all of this. The conversation that follows is quietly important.",
+  "The crew shares a proper meal together for the first time in days. Good food, close quarters, conversation that ranges widely and comes back to something true.",
+  "An undercrew member is discovered to have a talent nobody knew about — music, careful drawing, an instinct for reading the canopy's moods. It becomes a small event.",
+  "A long-running joke on board finally lands its payoff. Even the undercrew are laughing. It takes a while for things to settle back down.",
+  "A crewmember asks another for their honest opinion about something. The conversation is harder than expected and more useful than either anticipated.",
+  "The watcher begins to speak quietly about a rumour they heard once — a place nobody here has visited. By the time they're done, everyone wants to go there.",
+  "The undercrew produce, from somewhere, a bottle of something excellent that they are willing to share. The source is not disclosed. The quality is not in doubt.",
+  "The watch reveals the ship has a stowaway — small, young, not dangerous. Clearly been aboard since the last port. This is a decision.",
+  "A crewmember finds a message carved into the helm — old, weathered, half a known script. It takes the whole watch to puzzle out. It's worth the effort.",
+  "A crewmember has been sleep-talking, loudly. The content is surprising and has become general knowledge. They are the last person aboard to find out.",
+  "A long-standing ritual of the undercrew is observed for the first time by the crew proper — strange, specific, clearly meaningful. Questions are answered with surprising openness.",
+  "An undercrew member who has been quietly struggling with something comes to a crew officer in the long quiet of the watch and asks for help. This is that conversation.",
+  "During the calm watch a crewmember has a sudden, clear idea about a problem that has been unsolved for several sessions. It might even be correct.",
+  "A minor theft aboard — something small and personal, not worth much except to its owner. The question of who and why is more unsettling than the loss itself.",
+  "Two undercrew members are revealed to know each other from before — an old port, a shared history neither has mentioned. The dynamic in the hold shifts.",
+  "The watcher finds a piece of cargo in the hold that nobody remembers loading. It's not dangerous. It's just there. It has someone's name on it.",
+  "A crewmember who has been ill since the last port turns a corner during the calm watch. They'll need another day's rest, but the worst is clearly past.",
+  "Someone begins a canopy shanty to pass the time — call-and-response about the layers of the sea, the things below the thrash. Others join. The undercrew are listening. A crewmate gains a whisper.",
+  "A crewmember sits alone for a long time and writes — a letter, a record, something private — then folds it carefully away. They seem better for it.",
+  "An undercrew conflict has been escalating quietly. This is the calm time to address it before it becomes something the whole ship feels.",
+  "A piece of equipment malfunctions in a low-stakes, easily fixable way. Good practice. A useful reminder. No harm done.",
+  "A crewmember finds something they thought they'd lost — a personal object, a tool, a piece of writing — in a place they never left it. No explanation.",
+  "Two undercrew members who have not been getting along are discovered to have resolved it quietly, without help. The ship's atmosphere improves noticeably.",
+  "An impromptu storytelling session starts around the navigation table. The tales grow taller as the watch wears on. Several whispers circulate by morning.",
+  "A passenger who has kept entirely to themselves for the voyage appears on deck and watches the canopy in silence for an hour, then goes back below.",
+  "A crewmember makes a small but meaningful gesture toward another — returning a borrowed item, completing a task that wasn't theirs, saying something overdue.",
+  "A crewmember produces a bottle of something good they've been keeping for the right moment. They've decided this is it.",
+  "A crewmember recites something from memory — a long piece, a proper recitation, something learned years ago and not forgotten. The crew listens without speaking. A crewmate gains a whisper.",
+  "One of the undercrew requests to try a role they've been quietly watching — helm, watch, engine. The answer matters more to them than they show.",
+  "The watch ends and the incoming watcher finds the outgoing one still at their post, not asleep — just reluctant to leave the quiet. The handover is brief and warm.",
+  "A crewmember asks the Firefly a question about the world — something nobody has thought to ask before. The conversation opens something new.",
+  "A small celebration breaks out unprompted — a name-day, an anniversary of the crew's formation, a personal milestone someone has been too modest to mention.",
+  "A note tucked inside a piece of cargo, not addressed to anyone aboard. The content is ambiguous. It sticks with whoever reads it.",
+],
+
+haz: [
+  // Strange and unsettling peace
+  "During the calm watch, every member of the crew independently has the same thought at the same moment. They compare notes. This is disturbing in an interesting way.",
+  "The quiet on this stretch is different from ordinary quiet — not the absence of sound, but something more deliberate. The canopy is still. Even the engine sounds muffled. Nothing is wrong, exactly.",
+  "A crewmember wakes from a vivid nightmare screaming. The watch is calm, nothing outside has changed. But the content of the dream, when described, is specific enough to be worth noting.",
+  "A stretch of canopy the ship passes through has a quality the crew can't name — the branches arranged too regularly, the silence too total, the light wrong in a way that can't be pointed at. It passes.",
+  "The ship's undercrew are all awake during the small hours, all gathered on the lower deck without explanation. When asked, they cannot agree on why. No threat materialises.",
+  "Something brushes the underside of the hull during the calm watch — too deliberate to be a branch, too light to be a collision. Gone before anyone can investigate.",
+  "The watch produces a sound from below the canopy — not mechanical, not animal, not weather. Structured. Rhythmic. It continues for two hours and stops exactly.",
+  "A long section of the canopy below the ship is perfectly still — not in the way calm weather produces, but in the way of something choosing not to move. The ship clears the area without incident.",
+  "A crewmember on watch becomes briefly certain they can see something moving below the canopy in parallel with the ship. When others look, there is nothing. The feeling does not fully leave.",
+  "The canopy in this passage is composed of trees of a species none of the crew recognise — wrong leaf shape, wrong bark, wrong colour in this light. The charts show nothing unusual.",
+  "A hymn rises faintly from below during the quiet watch — distant, structured, clearly not animal. It doesn't grow louder. It doesn't fade. It stops when the ship clears the area.",
+  "During the quiet stretch, a crewmember finds writing on a section of their own skin — not tattooed, not inked, not painful. The words are legible. They don't recognise the script.",
+  "The engine runs fine. The navigation is clear. And yet every member of the crew independently feels, for approximately the same half-hour, that the ship is being watched by something that means it no harm.",
+  "A crewmember is found standing at the prow in the early hours, staring at the canopy ahead. They have no memory of going there. They are not sleepwalking — they are fully awake and calm.",
+  "A section of the canopy below has been cleared — not cut, not burned, not crushed. The trunks are present, the branches simply absent. The clearing is geometrically precise.",
+  "Every light source aboard dims simultaneously for approximately ten seconds during the calm watch, then returns to normal. The engine has not fluctuated. No cause is found.",
+  "A crewmember on watch hears their own name spoken clearly, from below the hull, in a voice they recognise. The voice belongs to someone they know to be in a port several days behind them.",
+  "The ship's wake is wrong — the canopy behind closes faster than it should, the trail lasting only minutes instead of hours. As if the sea is trying not to record the ship's passage.",
+  "An object moves on the deck during the calm watch — a tool, shifted perhaps a foot. No one was near it. No wind. The crewmember who owned it takes it below and does not discuss it.",
+  "The undercrew, without being told, all lock themselves below decks for an hour during the otherwise uneventful watch. When they emerge they say they're not sure why they did it. They seem fine.",
+  // Mire-relevant peace
+  "A particular quality of light at this hour, over this canopy, in this quiet — makes it possible to come to terms with something that has been very heavy. Heals mire.",
+  "The watch passes in near-total silence. By the end of it, something has settled in the mind of whoever kept it — a knot loosened that had been tight for a long time. Heals mire.",
+  "A moment of shared laughter so unexpected and genuine it resets something in the air between the crew. Nobody quite knows what started it. Heals mire.",
+  "The smell of the sea after the last rain — sharp, green, resinous, nothing else like it — cuts through the accumulated weight of the past several days. Heals mire.",
+  "A crewmember sits at the prow as the light fails and watches the canopy move. They return without speaking of it. They seem lighter. Heals mire.",
+  // Crewmember crises
+  "A crewmember's behaviour during the quiet stretch has been erratic in small, hard-to-name ways. Not dangerous — just wrong. Worth watching without confronting. Yet.",
+  "A crewmember does not appear for their watch. They are found below, awake and unhurt, but unable to explain why they didn't come up. They seem genuinely uncertain.",
+  "A crewmember is observed during the quiet watch to be writing and immediately destroying what they write — over and over, the same motion, for hours.",
+  "An undercrew member has stopped eating. Not dramatically, not loudly — just quietly, for three days now. Someone has noticed. The conversation will need to happen.",
+  "A crewmember, during the quiet stretch, says something that makes perfect sense to them and no sense to anyone else — a reference to an event nobody else remembers happening.",
+  "Two crewmembers have clearly reached a point where they cannot be in the same space. The journey is long. This cannot continue. Resolving it in the quiet is the best chance.",
+  "An undercrew member confides to whoever is on watch that they want to leave the ship at the next port. Not angrily. They are simply done. This matters more than it might seem.",
+  "A crewmember reveals, during the long quiet, something about their past that recontextualises a decision that has been a source of tension. The air shifts.",
+  "An undercrew member has begun marking days on the interior of the hull. The count is higher than the voyage has lasted. Nobody is sure when it started.",
+  "A crewmember who has previously been steady and reliable is showing signs of mire accumulation they haven't mentioned — withdrawal, small cruelties, the wrong kind of silence.",
+  // Subtle dangers in peace
+  "The calm watch reveals, under inspection, that a section of the hull has been compromised — not dangerously, not yet — from the outside. Something has been working at it. Slowly.",
+  "A piece of cargo in the hold has been opened and resealed. Whatever is inside appears undisturbed. Someone aboard has looked at it and decided, for now, to say nothing.",
+  "The ship's stores turn up short — not dramatically, but consistently, across several supplies. Either the manifest was wrong or something is being taken. Either way, the voyage gets tighter.",
+  "A crewmember discovers a compartment on the ship they hadn't known existed. It's empty. It's been emptied recently. The question of what was in it and who emptied it is not answered.",
+  "The undercrew are performing a ritual — old, specific, regional — that is traditionally done before a ship enters waters the crew believes are dangerous. They have not said this to the officers.",
+  "Navigation is slightly off — not wrong, but adjusted from what was plotted. Someone has made a small change to the planned route without discussing it. The course correction will cost time.",
+  "A crewmember on watch spots what looks like a signal from the canopy below — deliberate, repeated, then gone. No vessel is visible. No structure is visible. The signal was real.",
+  "The ship's log is missing two entries — not torn out, just absent, as if whoever was writing simply left those pages blank at the time and didn't return. The gaps cover the right days.",
+  "A piece of the ship's mechanical equipment is found to have been modified — not sabotaged, not broken, but changed in a way that suggests someone knew what they were doing. Recently.",
+  "An undercrew member has been receiving instructions from somewhere. Unsigned notes, passed through cargo. They haven't acted on anything visible. But they've been reading them.",
+  "A crewmember has not slept properly in days. They have not said this but it is visible. In the last watch they made two decisions they would not normally make.",
+  "An undercrew member was found somewhere they had no reason to be, at a time they had no reason to be there, with no explanation that holds together under questioning.",
+  "A personal conflict between two crewmembers has escalated past the point where the quiet watch can contain it. Resolution before port will require something more than time.",
+  "One crewmember is accumulating mire faster than the rest and has begun to show it in small aggressive ways. The crew has noticed. A confrontation is becoming necessary.",
+  "A crewmember has been conducting their own private investigation of something — going through cargo, reading logs they were not meant to read, asking questions in odd sequences.",
+  "The cook reports that a specific supply — not critical, but not replaceable until the next port — has been contaminated. The contamination is not accidental.",
+  "A crewmember confides, in the long quiet, that they believe another crewmember is not who they say they are. They have reasons. The reasons are specific enough to be taken seriously.",
+  "A section of the ship has been locked from the inside. The person inside is a crewmember. They have been in there for six hours. They are not responding. They are breathing.",
+  "A crewmember reveals, during the quiet watch, that they have been in contact with a faction in the last port that the rest of the crew would consider a problem. They have reasons.",
+  "An undercrew member is found to have been reading the ship's navigation logs and copying coordinates. They have not yet left the ship. They have not explained this.",
+  "A crewmember's arconautic focus has been behaving strangely for two days — drawing toward something ahead on the route, resisting any other direction.",
+  "The hull makes a sound during the quiet watch that no one can identify and that does not repeat. It came from below the waterline. There is no waterline. Something is below the ship.",
+  "A crewmember has stopped speaking, not from injury, not from grief, but from a decision. They are functional. They are watching. They will not say what changed.",
+  "A message is received on the ship's signal equipment — not distress, not routine — in a code two crewmembers recognise from different contexts. Both contexts are troubling.",
+  "A crewmember collapses during the quiet watch — not injured, not ill, simply gone inward. They are breathing. They are unresponsive. They have never done this before.",
+],
+
+}, // end peace
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ORDER  (watch roll = 4 or 5)
+// Cultural encounters — ships, outposts, survivors, wrecks, caches, conspiracies
+// ════════════════════════════════════════════════════════════════════════════
+order: {
+
+safe: [
+  "A trading vessel passes within hailing distance — a broad, slow cargo-hauler loaded low in the canopy, crew cheerful and waving from the deck. They're heading the same direction but slower.",
+  "A deep-tangle diver's vessel is surfacing nearby — a reinforced, blunt-prowed craft built for going down rather than across. They've come up with something and they're willing to talk about it.",
+  "A waystation — a simple dock, a fuel cache, a modest building — maintained by some port authority for travellers. Currently unstaffed but fully stocked. An honest find.",
+  "A remote insect farm is anchored in a dense stretch, crew working rigs over the sides into the tangle below. They'll trade fresh-caught insects for almost anything immediately useful.",
+  "A wandering market-ship — a floating bazaar — sits anchored and invites hailing. They're happy to trade, and equally happy to share news, rumour, and gossip from the last twenty ports.",
+  "A renowned vessel whose name several crewmembers know from different positive contexts passes within hailing distance. The crew are approachable and the conversation is worth having.",
+  "A training vessel crewed largely by new wildsailors, overseen by two visibly tired instructors, passes nearby. They'll trade any service for a moment of experienced advice.",
+  "A small family ship — no larger than a modest dwelling — drifts close. They live like this, moving the canopy slowly, trading small and carefully. They are hospitable and have news.",
+  "A salvage vessel with a notably good haul secured to its deck passes nearby. Pre-Verdancy materials, clearly valuable. They're not inclined to share the source, but they're cheerful about the find.",
+  "A survivor of a vessel lost months ago — long enough that they were presumed dead at the last port. Being found changes things for them in ways they're still processing. They're in good spirits.",
+  "A converted cargo vessel travelling as a mobile surgery. Not in crisis mode — just moving between ports, offering services. Worth a hail if any crewmember has an injury they've been ignoring.",
+  "A pilot boat from a distant port is running updated navigation markers — the canopy has shifted, old routes have changed. They share the updated bearings freely and recommend a small detour.",
+  "A marker buoy trailing signals indicates a newly surveyed hazard below — a crezzerin seep, a soft-spot rift. The information is accurate and the chart update is worth making.",
+  "A small farm-platform lashed between three trunks — nets draped down into the tangle, growing beds covering every surface. They have fresh food to trade and genuine stories from the local sea.",
+  "A courier vessel crosses your path at speed, barely slowing. They're running tight. They do exchange news — a sentence each — before pulling away. Both bits of news are useful.",
+  "A cache of supplies secured to a trunk at canopy level — food, fuel, equipment — with a note indicating it's a waystation maintained by a mutual-aid network. Free to use, fill before leaving.",
+  "A religious vessel whose congregation lives permanently aboard, sailing between communities to provide services. They're hospitable. Their galley produces extraordinary food.",
+  "A bug-fishing vessel sits anchored in a dense stretch, crew working rigs into the tangle. They'll trade fresh catch — good protein, better than stored rations — for almost anything.",
+  "A watchtower on a stable spit, manned and lit, with a signal lamp starting to blink as the ship approaches. Not distress — just attention. They want to know who you are and they'll share what they know.",
+  "A small group who lost their ship to weather weeks ago have been sheltering on a stable spit, in good condition but relieved. They have information about conditions between here and the next port.",
+],
+
+mild: [
+  "A vessel flying the flag of a faction the crew knows by reputation — not hostile, but with interests that don't cleanly align. They're friendly. The friendliness has an angle.",
+  "A revenue cutter out of a distant port is running a stop-and-inspect patrol. They're within their rights. How close the ship's current cargo bears examination is a question worth asking.",
+  "A heavily armed escort ship is travelling parallel, protecting something it isn't displaying. They're professional and not interested in conversation, but they're watching every move.",
+  "A drilling rig anchored to an ironroot trunk, operating continuously. They'll trade refined materials for raw ones. They're cautious about visitors and specific about what they want.",
+  "A survivor who has clearly been in the tangle for some time — injured, dehydrated, and possessed of urgent news. The news is either genuinely urgent or they're making it sound that way.",
+  "An old wreck, decades in the branches, its upper deck still above the thrash. Something in the cargo hold is intact and of interest. So is the thing living in the cargo hold.",
+  "A small fleet of three identical vessels travelling in formation, no markings, no signals. Disciplined, purposeful, going somewhere with clear intent. Acknowledging the ship's existence minimally.",
+  "A ghost ship — not supernaturally, just abandoned — drifting with lights on, cargo intact, no visible crew. Everything appears to be in order. Nobody is home. No obvious reason.",
+  "A vessel from a distant culture whose signals are unfamiliar but whose intentions are clearly peaceful. A careful hail could be the start of something valuable. Getting it wrong could complicate things.",
+  "A dead drop in the crook of a large ironroot branch — correspondence, encoded, significant enough to be hidden well. Enough visible to indicate value. Not enough to make immediate sense of.",
+  "A small group sheltering on an unstable spit, their ship destroyed, no means of rescue. They're in reasonable condition. They're also in possession of cargo that clearly isn't theirs.",
+  "A salvager's cache discovered wedged in branches — secured to the underside of a large limb, invisible from the surface. Valuable and clearly hidden. The ownership is genuinely ambiguous.",
+  "An abandoned customs post, its authority long withdrawn, paperwork still in order. Someone has been using it as a meeting point. Recently. The meeting has not yet happened.",
+  "A derelict-looking vessel that is, on closer inspection, not quite as derelict as it appeared. Someone is watching from it. They haven't moved. They've been waiting a specific amount of time.",
+  "A remote distillery operating in deliberate isolation, producing a spirit from canopy-sourced materials. They sell. They trade. They don't ask questions and don't answer many.",
+  "A vessel flying a flag that several crewmembers recognise from different contexts — none reassuring individually, all pointing in the same direction collectively. They haven't signalled.",
+  "A pre-Verdancy structure protrudes above the canopy line — part of a larger building, possibly intact below the thrash. Exploring it would take time. Not exploring it would take the alternative.",
+  "A pattern of signal markers placed across three visible trunks — not a standard navigation aid. Someone has been communicating through here recently and the pattern is recent.",
+  "Two vessels that were clearly together have separated and are now sailing divergent routes with visible mutual hostility. Both notice the ship. Neither is currently focused on it.",
+  "A wreck that matches, in every detail, a ship that three different crewmembers independently believed was destroyed in entirely different incidents. The logbook is still aboard.",
+  "An aerial signal relay — a mast on a tall spit — has been cycling a message since before the ship arrived. The crew is now close enough to read it. It's not addressed to them, but the content matters.",
+  "A survivor on a makeshift raft — days out, still functioning, still purposeful. They saw what happened to their ship. What happened to their ship is relevant to this route.",
+  "A small armaments depot marked on old charts as decommissioned. It is not decommissioned. The current operators are not affiliated with whoever built it.",
+  "A wreck that is not entirely uninhabited — someone is living in it, and has been for a long time, and has made the ruin quite comfortable. They have conditions for being spoken to.",
+  "A series of observation platforms installed near an old route — not maintained by any port authority. Someone has been watching this passage. The platforms are not currently occupied.",
+  "Evidence of a large encampment on a spit, abandoned in recent haste — fires still warm, gear left behind, an orderly camp made disorderly in minutes. The cause of departure is not visible.",
+  "A vessel observed at distance that changes course the moment it spots the ship, moving to a less visible position. Not approaching, not fleeing. Watching from cover.",
+  "A nota fired across the bow — a message wrapped around a bolt, launched from the canopy below. No attribution. A set of coordinates and two words: don't stop.",
+  "A trail of unusual equipment on the canopy surface — not wreckage, not litter, but a sequence of objects left over distance, like a message or a map. Recently placed.",
+  "A cache discovered when the ship brushes a cluster of branches — hidden on the underside of a large limb. It contains something that was clearly being moved quietly and is now abandoned.",
+  "A diplomat's vessel travelling with minimal escort, its flag requesting safe passage and nothing more. They are going somewhere significant. They are not saying where.",
+  "The ships passed in the last several hours have all been moving away from the same general area, at speed. None of those hailed will explain why.",
+  "A piece of wreckage drifting on the canopy bears the mark of a port that officially never had a vessel in this region. This is either a clerical error or something that needs to stay quiet.",
+  "A cluster of recently installed markers near an old route — surveying markers, not navigation markers. Something is being measured here. Nobody has publicly announced a survey.",
+  "A lone figure on a spit who makes no gesture of distress and no gesture of welcome. They are simply watching the ship approach. They have been there long enough to have supplies.",
+  "A ship passing without signalling whose crew, visible on deck, are all watching the ship in complete silence as they pass. No aggression. No acknowledgement. Just attention.",
+  "A remote logging operation harvesting deep ironroot sections. The timber quality is unusual. The crew are tight-lipped. The operation is larger than a site this remote should support.",
+  "A cache left by a previous crew who passed this way — provisions, a note about conditions ahead, and something personal left behind as a good-luck charm that clearly belonged to someone specific.",
+  "A weather station with a single exhausted observer recording conditions. They haven't had news in weeks. Their log, visible from the dock, contains entries that stop abruptly eight days ago.",
+  "A marker on a large trunk — burned into the wood — that one crewmember recognises as a territorial sign used by a faction thought dissolved five years ago.",
+],
+
+haz: [
+  // Approaching threats
+  "A marauder vessel is spotted on an intercept course — moving fast, running no flags. At this distance there is still time to attempt to avoid engagement.",
+  "A ship launches a single warning shot — not aimed to hit, but close enough that the message is clear. They want the ship to stop. Their reasons are not yet visible.",
+  "A heavily armed vessel changes to an intercept course the moment the ship is spotted. They are faster. Avoidance is possible but not guaranteed.",
+  "A fleet of three marauder vessels is operating in this stretch of the sea. One has spotted the ship. The other two have not yet.",
+  "A naval vessel flying colours of a port with which there is outstanding legal business is on a parallel course and appears to have identified the ship.",
+  "A submersible surfaces unexpectedly alongside — close enough that its hull scrapes the canopy. Military-grade. Armed. Its markings are not those of any port currently at peace with anyone.",
+  "A vessel that has been tracking the ship at a distance for the last several hours has begun to close the gap. It has not signalled. It has not slowed.",
+  "A pirate vessel disguised as a trading ship drops its false colours at close range. The crew on deck are armed and there are more below. The situation is not yet irretrievable.",
+  "A patrol vessel hails the ship and requests to board for inspection. The request is legal. Whether what will be found is a problem depends on what is currently in the hold.",
+  "Two rival vessels are exchanging fire directly across the ship's route. Neither is targeting the ship, but the space between them is currently impassable.",
+  // Desperate survivors
+  "A survivor vessel — barely floating, clearly after a bad fight — drifts close. The crew are alive. The crew are also armed, frightened, and unsure whether to trust or take.",
+  "A lifeboat with survivors flags the ship down urgently. They are genuinely in distress. They are also being followed by something that hasn't surfaced yet.",
+  "A castaway on an isolated spit who is in genuine danger — the spit is slowly destabilising, and they know it. The rescue is not complicated. Getting close enough is.",
+  "A survivor of a known vessel is found adrift with injuries inconsistent with any natural accident. They're alive. They will not say what happened. But they keep looking behind the ship.",
+  "A small group of survivors has been sheltering on a half-sunken wreck. The wreck has begun moving. Something below has become aware of the activity on its surface.",
+  // Dangerous wrecks and ruins
+  "A fresh wreck — within the last day — with no survivors visible. The cargo is scattered across the canopy. Something caused this damage. Something capable of doing it to this ship too.",
+  "An old military installation, officially decommissioned, is showing active power signatures. Someone or something has reactivated it. It has identified the ship as a contact.",
+  "A wreck lodged between two trunks is actively being salvaged by a team who are not interested in witnesses. They have already spotted the ship. They are communicating with each other.",
+  "A pre-Verdancy structure above the canopy is radiating crezzerin from a source inside it. Whatever is inside has been building up for a long time. The structural integrity is failing.",
+  "A wreck that appears to have been visited very recently — cut marks fresh, cargo disturbed, fire recently extinguished — with personal effects scattered in a way suggesting departure under duress.",
+  // Conspiracy and consequence
+  "A note in a cache meant for someone else contains specific information about this ship — its route, its crew, its current cargo. Someone has been providing information to someone.",
+  "Three ships in the last few hours have all diverted away from a specific area ahead. Nobody who's been hailed will explain why. The most recent ship to pass through that area is now a wreck.",
+  "A beacon is active on a small spit — a distress signal, regular, professional. The spit is empty when approached. The beacon has been running for six hours. Something left it behind.",
+  "A vessel is spotted acting erratically — heading, stopping, heading again — and when hailed produces only silence. It is occupied. The crew are alive. They are not in control of the ship.",
+  "A faction mark is found carved into three sequential trunks along the route — fresh, deliberate, addressed to no one. It is a territorial claim over the route currently being sailed.",
+  "A supply cache that should be stocked — maintained by a port authority the crew has used before — has been emptied. Violently. Recently. The structure around it is undamaged.",
+  "Correspondence found in salvage contains specific details about the current crew — personal details, current route — compiled before the voyage began. Someone was preparing.",
+  "A ship passes flying an emergency quarantine flag. They do not hail. They do not slow. The crewmembers visible on deck are wearing coverings. The flag is not being used incorrectly.",
+  "A patrol vessel that should be a routine encounter responds to a hail by asking the crew to heave to and prepare for an unusual level of scrutiny — and mentions something about the last port.",
+  "A floating camp — a semi-permanent platform usually found in neutral territory — is actively burning. No vessels are nearby. No signals have been sent. It has been burning for hours.",
+  // Crezzerin, illness, supernatural
+  "A vessel encountered in this stretch is crezzerin-contaminated — visible crystal growth on the hull. The crew are alive. They do not seem fully aware of what is happening to them.",
+  "A ship hails to warn of a crezzerin seep directly ahead — large, recent, rising fast. Their own ship has already taken exposure. They are advising avoidance, not asking for help.",
+  "A wreck encountered here is entirely overgrown with crezzerin crystal formation. It has been here long enough to have happened naturally. The cargo inside is probably intact.",
+  "A vessel flags the ship down to report a disease moving through the last port — something new, spread by contact, moving fast. They want to know how recently the crew was there.",
+  "An outpost encountered along the route has been abandoned in a way that suggests illness — quarantine marks scratched into the door, food left out, equipment untouched.",
+  "A ghost ship that is not natural — the crew present but not responsive, moving but not steering, lights burning but not powered by any identifiable source.",
+  "A vessel met in these waters is flying the colours of a ship that was lost with all hands two years ago. The crew aboard, when visible, do not respond to hails. They are all there.",
+  "A signal coming from below the canopy — regular, artificial, the pattern of a distress call — from a depth where no vessel should be broadcasting.",
+  // Outright dangerous
+  "A refinery outpost has experienced a crezzerin containment failure. The crew are alive and evacuating onto the canopy surface. The cloud is expanding. The route passes through its projected spread.",
+  "A cache discovered here contains not supplies but evidence — documentation of something being done in this region that was not supposed to be discovered. The people responsible will eventually check this cache.",
+  "A marauder barricade has been erected across the primary route — chainsaw-lashed trunks, armed crew, a toll demanded. There are too many of them to engage directly. There may be another way.",
+  "A vessel encountered here hails to request immediate medical assistance. The request is genuine. The ship is also being used as bait. Both things are true.",
+  "An armed vessel running military colours hails with an order — not a request — to stand down and prepare to transfer a specific piece of cargo. The order cites specific authority.",
+  "A living ship — an organic vessel, rare, territorial — is moored in the route ahead and appears to be nesting. It is not aggressive by nature. It is protective by nature. That is the problem.",
+  "A wreck in the route contains survivors, but the approach to the wreck has been mined with trip-laced branches at hull level. The survivors are aware of this and are trying to signal it.",
+  "A vessel hails to report that the port ahead has closed its harbour — an emergency, no details given — and is turning back all incoming ships. They are advising the same. They look frightened.",
+  "A crew of former associates — or enemies — is encountered in this stretch of water, in a position of advantage, with a grievance that predates this voyage.",
+  "A vessel of the same class as the ship is found wrecked here — same specifications, different name — destroyed in a way that implies the damage was targeted rather than accidental.",
+  "A distress flare is fired from the canopy below — not from a ship, from someone on foot in the tangle. Getting to them is the problem. Something else is already moving toward the signal.",
+  "A vessel hails to warn that a bounty has been posted on this ship — publicly, officially, at the last port. The posting is recent. The vessel sharing the information wants something for the news.",
+  "A blockade runner is being chased through this area and the pursuit is moving toward the ship's position. Neither party is interested in collateral. The ship is collateral.",
+  "A vessel explodes in the middle distance — a catastrophic crezzerin containment failure, the shockwave rolling across the canopy. Debris is incoming. Something in the debris is still moving.",
+  "A hail from a vessel flying port authority colours reveals that the last port the crew visited has issued an outstanding warrant. The nature of the warrant is read aloud. It is specific.",
+  "An outpost encountered on this route has been destroyed recently, thoroughly, with deliberate intent. Nobody is alive. The method used is not consistent with any accident.",
+  "A vessel that has been following at a comfortable distance for several hours is now close enough that its deck armaments are visible. It still has not hailed.",
+  "A port runner encountered here is carrying information about a threat specifically targeting this ship. The information has a price and the runner knows its value.",
+  "A vessel is adrift with its crew incapacitated — alive, not injured, but entirely unresponsive. The cause is not visible. The ship is otherwise intact.",
+  "An armed checkpoint has been established on the route ahead — two vessels blocking passage, demanding a toll and manifest inspection. Not affiliated with any official authority.",
+  "A vessel is burning — crew alive, trying to control it — and the fire is the spreading kind. The wind is currently toward the ship.",
+  "A living ship — organic, territorial, rare — has begun treating the route as its nesting ground. It is not aggressive by nature. It is protective by nature. The distinction is shrinking.",
+],
+
+}, // end order
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// NATURE  (watch roll = 1, 2 or 3)
+// Wild encounters — weather, features, wonders, horrors, landfall, creatures
+// ════════════════════════════════════════════════════════════════════════════
+nature: {
+
+safe: [
+  "The skies clear completely — rare enough that several crewmembers come on deck purely to look. Visibility to the horizon. Distant features become visible that the charts agree with.",
+  "A cascade of blossom falls from the upper ironroot crowns above — seasonal, massive, entirely harmless. The deck becomes a carpet of flowers for an hour.",
+  "A light rain, soft and warm, smelling of green and growing things. Refreshing rather than miserable. It passes in an hour and leaves everything noticeably cleaner.",
+  "A strong favourable wind clears the ambient spore-clouds and opens the middle distances. The ship handles better and progress comes with less effort than usual.",
+  "After a stretch of difficult weather, a period of perfect sailing conditions settles in. Steady temperature, clear sky, canopy cooperative. A good stretch to make progress.",
+  "A tallshank — a trunk dwarfing even the ironroots, punching through the canopy and continuing hundreds of feet above it — comes into view. The scale of it takes a moment to process.",
+  "A natural channel through the canopy appears ahead — a long corridor of relatively unobstructed sailing, useful for both speed and orientation.",
+  "A field of crezzerin crystal formations rises from the canopy surface — dozens of them, ranging from waist-high to taller than a person. Beautiful, containable, potentially useful.",
+  "A stable island — an actual mountaintop above the canopy — appears ahead, with vegetation at the surface and what appear to be signs of old habitation. Approachable.",
+  "A bloom of bioluminescent organisms covers the canopy surface over a wide area, pulsing gently. At night it turns the whole region into a slow light-show. Stunning and completely harmless.",
+  "A pair of ironroot trunks that have grown together at the base, their crowns forming a natural arch. Old markings are carved into both sides. The passage is clear and wide.",
+  "A natural basin in the canopy — a wide, shallow depression of interlocked branches — has collected clean rainwater. A useful resource. A peaceful, sheltered place to stop.",
+  "A convergence of canopy birds — hundreds of species drawn to this point at this time — fills the air above the ship with an impossible volume of overlapping song. Heals mire.",
+  "The ironroot trunks in this area produce a low harmonic resonance at dawn — felt through the hull rather than heard in the air. Nothing wrong. Just old wood and deep roots. Heals mire.",
+  "A pod of something enormous but clearly unaggressive surfaces briefly near the ship, regarding it calmly with one eye larger than the hull before descending again. Heals mire.",
+  "A column of blossom and spore rises from below — not hazardous, a seasonal event — a tower of colour rising hundreds of feet in still air. The crew stops to watch. Heals mire.",
+  "An ancient ironroot in this area is in the final stage of its life — dying in a bloom of every kind of growth, fungi and moss and lichen in extraordinary colour. Heals mire.",
+  "A pocket of clear air between two trunks holds a perfect acoustic anomaly — distant sounds audible whole and close, as if their sources are standing nearby. Heals mire.",
+  "A spit stable enough to moor beside — the mineralised bones of something enormous, grown over, creating a platform above the canopy with shelter and the possibility of fresh water.",
+  "A small island with a natural harbour of sorts — two trunks growing close enough to shelter a vessel on three sides. Unexpectedly good anchorage. Signs of past use but not recent.",
+],
+
+mild: [
+  "A driving rain sweeps in — heavy, warm, turning the canopy into a roaring surface of sound. Visibility drops sharply. Working on deck is miserable but not dangerous.",
+  "A hailstorm without warning — not large stones, but dense and sustained, rattling the hull and making deck work nearly impossible until it passes.",
+  "A fog bank rolls across the canopy from the east — too thick and oddly still. Navigation becomes guesswork for the duration. Nothing is visible beyond the immediate hull.",
+  "A spore-cloud rises from a disturbance below the tangle — dense, multi-coloured, fast-rising. Inhaling this particular combination is inadvisable. Getting below is the right call.",
+  "A bloomtide approaches from the south — a wave of dense pollen and blossom washing over the ship in a curtain. Blinding and choking for ten minutes. Then it passes.",
+  "A rootquake below the canopy. The sea surface heaves and bucks with a rolling motion. Trunks are shifting somewhere below. The ship rides it, but the canopy ahead looks different now.",
+  "A pressure change arrives fast enough to be physical — a weather wall, two atmospheric systems colliding. The canopy heaves. Time to prepare: a few minutes.",
+  "A roach-river — a dense mass of insects moving across the canopy surface, wide as the ship is long. Going through it is possible. Going through it cleanly is not.",
+  "A sudden temperature drop — the air going cold within minutes. Frost on the rigging. Ice crystals on the deck. The canopy below takes on a strange beauty. Handling becomes cautious work.",
+  "A dry electrical storm, no rain — just continuous lightning striking the canopy below in a pattern too regular to be random. The ship is not currently being struck. Currently.",
+  "A wind shear hits the ship sideways without warning — not a storm, just a column of focused pressure the canopy has channelled upward. The ship lists badly for a moment.",
+  "A region where the canopy is unusually thin — the branches sparse, the light reaching deeper than normal. Things live at this depth that don't usually come up. Some are now coming up.",
+  "A rift in the canopy — a gap where the branches have parted — is visible ahead. Not small. Wide enough that the route may need to skirt it. Something is moving in the darkness below.",
+  "A patch of canopy where every tree has been stripped of leaves over a wide area — not damage, not disease, but something that feeds this way. It was here recently and the canopy has not regrown.",
+  "A crezzerin-laced rain sweeps in — the air turning sharp and chemical, the water burning on exposed skin. Get below. Seal the ventilation. Wait it out.",
+  "A massive ironroot has fallen, its crown spreading across the canopy surface and creating a new temporary landscape of branch and leaf directly across the route. Navigable but complex.",
+  "A thermal column rises through a gap in the canopy — warm air carrying the smell of deep earth and something older. Useful for some vessel types. Disorienting for all of them.",
+  "A living storm builds on the horizon and turns toward the ship. Not quite weather — too purposeful, too consistent in its direction. It will arrive in its own time.",
+  "A natural channel that looked clear on the charts has been partially closed by recent trunk movement. The passage is still viable, but narrower, and the canopy on both sides is unstable.",
+  "A section of canopy the ship enters has no wind at all — not calm, but actively still, as if something large is sheltering here and the canopy is pressed down around it. The something is below.",
+  "A deep sink-hole — a depression, the canopy curving gently downward over a wide area. Ships that sail onto it drift down. Slowly. The edges are not clearly marked.",
+  "A spit of compressed wreckage — old ships, materials, decades of accumulation — solid enough to stop on, colonised by growth. The route passes close. Something among the wreckage is moving.",
+  "A narrow ridge of canopy raised above the general level by compressed growth — exposed, high, excellent visibility. Also visible from distance. Something on the horizon has noticed the ship.",
+  "A horror of the wilds — a section of canopy the ship passes through where everything living has vacated, the silence total, the branches subtly wrong. What left, and why, is not visible. Marks mire.",
+  "A hymn rises from the Tangle — deep, structured, not animal. Some crewmembers find it compelling rather than disturbing. That is the most disturbing thing about it. Marks mire.",
+  "A region where multiple ships have wrecked over years, all in the same way, all on calm days, no storms, no reefs. Passage through the area is very quiet. Marks mire.",
+  "A crezzerin-affected zone where the growth has become more than plant — aware, responsive, reaching. The ship can pass through. It will be noticed while doing so. Marks mire.",
+  "A wreck scattered across a wide area, damage not matching any known hazard. Something deliberate did this. Something that could do it again. Marks mire.",
+  "A floating island of debris — stable, colonised, used as a home by something — sits across a convenient route. Going around takes longer. Going through disturbs a resident.",
+  "A colony organism — insects acting as a single entity — has built a structure bridging two trunks directly in the route. It is occupied. Displacing it will not go unnoticed.",
+  "A large territorial creature has staked its range across the route. It will not attack unprovoked. The ship's passage through its territory counts as provocation.",
+  "A migration of thousands of large canopy animals is in progress directly across the route. Going through is possible. Going through cleanly is not. Going around is longer.",
+  "A creature that hunts ships — adapted to engine heat and noise — is below the canopy, tracking. It is patient. It is waiting for the ship to slow.",
+  "A semi-sentient rift — a mobile gap in the canopy, its edges threshing — is drifting across the route ahead. It doesn't pursue. It simply happens to be going the same way.",
+  "A storm has trapped crezzerin vapour at canopy level ahead, creating a reactive cloud that clings to the route for a long stretch. Avoiding it adds time. Passing through it adds exposure.",
+  "A crezzerin bloom is rising from a disturbance below — a wide cloud of reactive vapour ascending fast. The ship has a few minutes to decide how to respond.",
+  "A section of ancient ironroot is failing — collapsing slowly but certainly, and the cascade is spreading toward the ship's position at a walking pace.",
+  "A swarm of large insects, attracted by the engine's heat, descends on the ship. Not dangerous individually, collectively capable of jamming every moving part if not cleared.",
+  "A deep-Sink predator has ascended to the thrash level, confused and extremely dangerous in territory that does not suit its size or temperament.",
+  "A leviathan passes below the canopy — the hull creaking, the canopy churning in its wake. It does not surface. This time.",
+],
+
+haz: [
+  // Severe weather
+  "A storm arrives without the warning the weather-watcher should have caught — already on top of the ship before it can be prepared for. Driving rain, lateral wind, zero visibility.",
+  "A living storm bears down on the ship with evident purpose — these things are rare enough to be legend, common enough to be real. It is not moving randomly.",
+  "A lightning storm lingers over the ship rather than passing — the same cell circling, tightening its radius, striking the canopy progressively closer to the hull.",
+  "A rootquake has rearranged the canopy topology directly ahead — what the charts show is no longer accurate. The new landscape is navigable but completely unknown.",
+  "A fire — rare, moving fast — has started ahead. The smoke column is visible from a distance that does not leave enough time to be comfortable about it.",
+  "A crezzerin storm — the worst kind, rain laced with active reagent — sweeps in from the north. Exposure for the unprotected is damaging within minutes.",
+  "A bloomtide hits with unexpected density — not the light seasonal kind, but a compression of growth that reduces visibility to arm's reach and clogs the drive mechanism.",
+  "A weather system has compressed a crezzerin cloud to canopy level and is pushing it forward at speed. The cloud is wider than it is possible to sail around in available time.",
+  "A wind shear column catches the ship mid-crossing of an open stretch — the lateral force significant enough to threaten capsizing if the helmsman does not respond immediately.",
+  "A pressure inversion traps a pocket of crezzerin-laced atmosphere in a basin the charts show as clear passage. The air inside will cause visible exposure within minutes of entry.",
+  // Extreme natural features
+  "A rift has opened across the route overnight — not on any chart, not visible until the ship is close. The gap is wide enough that turning a chainsaw vessel is a specific problem.",
+  "A leviathan is surfacing directly ahead — slow, enormous, not hostile by nature. The surface displacement is enough to make the canopy behave like water in a storm.",
+  "A section of ironroot canopy is collapsing in stages — each fall triggering the next in a chain that has been building since before the ship arrived and will continue after it leaves.",
+  "A pair of rifts have opened on either side of the current route, making the passage between them navigable but unpredictably narrow. Both are widening.",
+  "A tallshank's lower crown — hundreds of feet above the normal canopy — has been fractured by something and is descending. The debris field when it lands will be large.",
+  "The route passes through a stretch where three separate rootquakes have occurred in recent days. The topology is unrecognisable. Trunks have shifted enough that the charts are wrong.",
+  "A massive crezzerin seep has erupted from below the tangle, rising in a column visible from miles away. The reactive cloud is spreading at the surface at speed.",
+  "A region of the canopy has developed a secondary growth layer — crezzerin-accelerated, explosive, pushing upward fast enough to be visible. The route passes through its projected spread.",
+  "A leviathan has recently died in this area — its body is changing the canopy structure as it decomposes, and the biological activity around it is at a scale that affects navigation.",
+  "A sink-hole has opened at the end of a natural channel the ship is already committed to — the canopy curving down on all sides, the pull measurable, the exit not yet visible.",
+  // Severe creature encounters
+  "A pack of ship-hunting predators — large, coordinated, adapted specifically to engine heat and hull vibration — has the ship surrounded and is beginning to test the hull.",
+  "A leviathan has the ship in its peripheral awareness and is curious. A leviathan that is curious is a leviathan that is close. A leviathan that is close is a leviathan that can be accidental.",
+  "Something from the Sink has ascended to the thrash level and attacked the ship, tearing a section of the lower hull before retreating. It has not gone far.",
+  "A colony organism — millions of insects functioning as one — has claimed the route ahead and is actively repelling passage. It is large enough to damage the ship if it chooses to.",
+  "A territorial creature has interpreted the ship's approach as aggression. It is wrong about this, but it is large and it is fast and being right about the misunderstanding will take time.",
+  "A creature that hunts by sound has locked onto the engine signature and is now pacing the ship below the canopy surface. It is adjusting its depth as the ship adjusts speed.",
+  "A flock of large canopy predators, normally solitary, is moving in unusual numbers across this area — something has driven them upward. They are not ignoring the ship.",
+  "Something is dismantling the ship from below — methodically, tool-like, working on specific structural points. It has been doing this for long enough that the work is advanced.",
+  "A creature that has never been documented is moving through this area and has taken an interest in the ship specifically. Its intentions are not aggressive. Its scale is the problem.",
+  "A leviathan fox — one of the great canopy hunters, famous in sailors' stories — has begun circling the ship at a distance. It is not attacking. It is learning.",
+  // Supernatural and extreme horror
+  "Complete darkness falls over this section of the Wildsea — not night, not weather, a total absence of light in a bounded area. The ship has sailed into it. Navigation requires something other than sight.",
+  "The canopy in this area is alive in a way that exceeds the normal understanding of what plants do — reaching, responding, coordinating. The ship is in the middle of it.",
+  "A hymn from the deep is rising with the volume of something close. The crew members most affected are moving toward the prow without being aware they are doing so.",
+  "An ossified titan looms out of the canopy — the preserved remains of something pre-Verdancy and vast — directly in the route. What killed it did not kill it completely.",
+  "A ghost ship is blocking the route — not drifting but anchored, lights burning, crewed by crew who do not respond to any hail, who do not move, who do not leave. The route passes through them.",
+  "A crezzerin-affected region of the canopy has become structural — crystal formations interlocking above and below the surface, the ship now enclosed on three sides.",
+  "A rift that should be stationary has begun to track the ship — not quickly, not certainly, but the correlation between its movement and the ship's direction is becoming difficult to dismiss.",
+  "The ship has sailed into a region where the crezzerin saturation is high enough to cause acute effects without direct contact — ambient exposure, affecting the crew through the air.",
+  "Something has displaced an enormous section of the canopy — not a rootquake, not weather, but something that moved through here at a scale that makes the cause unclear.",
+  "A force of nature the crew has no framework for is ahead — a moving structure of canopy, crezzerin, and something else, organised in a way that defies the categories available.",
+  // Immediate danger — combined
+  "A crezzerin seep below the ship ignites from the engine heat — the canopy below catches in the distinctive cold-blue crezzerin burn, spreading fast, the ship at its centre.",
+  "A marauder ambush was set for a different ship — the crew emerges from concealment to find the wrong target in their trap. They are armed, they are committed, and retreat is complicated.",
+  "A rootquake opens a rift directly under the ship — the canopy splits beneath the hull, the ship balanced over a growing gap into the dark below.",
+  "A creature the size of the ship surfaces directly beneath it — not attacking, surfacing — and the displacement throws the vessel sideways against the nearest trunk.",
+  "The engine has ingested a crezzerin crystal fragment from the canopy spray. The build-up inside the combustion chamber is happening faster than normal maintenance can address.",
+  "A living storm catches the ship in its centre — the eye is calm but the wall is close on all sides, and the eye is moving. The ship is not moving faster than the eye.",
+  "A section of the route ahead has been deliberately sabotaged — trunks cut to fall on passage, crezzerin-laced branches woven into the canopy surface at hull height.",
+  "The canopy below the ship has been supersaturated with crezzerin from a recent seep. The heat of the engine is sufficient to trigger a reactive event. The countdown is short.",
+  "A leviathan wake from a deep passage below has inverted a section of the canopy — what was surface is now a depression, what was depth is now a wall. The ship is in the fold.",
+  "Something has been building in the canopy around the ship's current position for the last hour — a deliberate convergence of crezzerin crystal, organism, and growth that is not a natural formation.",
+  "A wall of old-growth ironroot — trunks so close that no standard vessel can pass — stretches across the intended heading with no charted route around.",
+  "A crezzerin geyser erupts from a rift below without warning, the column of reactive fluid reaching hull height before the ship can clear the radius.",
+  "The canopy below the ship has begun producing an aggressive crezzerin-accelerated growth pushing upward, the fastest fronds already scratching the hull.",
+  "A pod of leviathans is migrating through this area. One surface event from any of them will swamp the ship. The migration is moving slower than the ship can go around.",
+  "A spore-storm rises from a major disturbance below — the category that closes eyes, jams engines, and causes acute exposure within two minutes unprotected.",
+  "A rift opens twenty metres ahead of the ship mid-transit through a narrow channel. Neither the reverse distance nor the forward distance is comfortable.",
+  "The route passes through crezzerin-saturated growth that is burning in the cold-blue crezzerin manner. The fire started from resonance, not heat. It is spreading.",
+  "A creature is using the engine vibration as a mating signal. Its intended partner is responding. The partner is larger. Both are now approaching from different directions.",
+  "A rootquake opens a rift directly under the ship’s current position — not ahead, not behind, here, now — the canopy splitting below the hull.",
+  "Something vast passed through this area recently and the canopy has not recovered — trunks snapped, routes closed, a corridor of destruction the charts show as clear passage.",
+],
+
+}, // end nature
+
+}; // end tables
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let watchVal = null;
+let threatVal = null;
+
+function watchType(v) {
+  if (v === 6) return 'peace';
+  if (v >= 4) return 'order';
+  return 'nature';
+}
+function threatType(v) {
+  if (v === 6) return 'safe';
+  if (v >= 4) return 'mild';
+  return 'haz';
+}
+function threatLabel(t) {
+  if (t === 'safe') return 'Safe';
+  if (t === 'mild') return 'Mild Danger';
+  return 'Hazardous';
+}
+function watchLabel(w) {
+  if (w === 'peace') return 'Peace';
+  if (w === 'order') return 'Order';
+  return 'Nature';
+}
+
+function setWatch(v) {
+  watchVal = v;
+  document.querySelectorAll('.die-btn[id^="w"]').forEach(b => {
+    b.className = 'die-btn';
+  });
+  const wt = watchType(v);
+  document.getElementById('w' + v).className = 'die-btn active-watch' + (wt === 'peace' ? ' active-peace' : '');
+  document.getElementById('watch-label').textContent =
+    v + ' → ' + watchLabel(wt);
+  updateState();
+}
+
+function setThreat(v) {
+  threatVal = v;
+  document.querySelectorAll('.die-btn[id^="t"]').forEach(b => b.className = 'die-btn');
+  const tt = threatType(v);
+  document.getElementById('t' + v).className = 'die-btn active-' + tt;
+  document.getElementById('threat-label').textContent =
+    v + ' → ' + threatLabel(tt);
+  updateState();
+}
+
+function updateState() {
+  const bar = document.getElementById('state-bar');
+  const drawBtn = document.getElementById('draw-btn');
+  const multiBtn = document.getElementById('multi-btn');
+  if (!watchVal || !threatVal) {
+    bar.innerHTML = '<span style="color:#555;font-style:italic;">Set both dice above, then draw an encounter.</span>';
+    drawBtn.disabled = true;
+    multiBtn.disabled = true;
+    return;
+  }
+  const wt = watchType(watchVal);
+  const tt = threatType(threatVal);
+  const pool = tables[wt][tt];
+  bar.innerHTML =
+    '<span class="state-watch ' + wt + '">' + watchLabel(wt) + '</span>' +
+    '<span class="state-divider">×</span>' +
+    '<span class="state-threat ' + tt + '">' + threatLabel(tt) + '</span>' +
+    '<span class="state-count">' + pool.length + ' possible results</span>';
+  drawBtn.disabled = false;
+  multiBtn.disabled = false;
+}
+
+function drawEncounter() {
+  if (!watchVal || !threatVal) return;
+  const wt = watchType(watchVal);
+  const tt = threatType(threatVal);
+  const pool = tables[wt][tt];
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  const area = document.getElementById('result-area');
+  area.className = 'result-card ' + tt + '-card';
+  area.innerHTML =
+    '<div class="result-meta">' +
+    '<span class="meta-watch ' + wt + '">' + watchLabel(wt) + '</span>' +
+    '<span class="meta-threat ' + tt + '">' + threatLabel(tt) + '</span>' +
+    '</div>' +
+    '<div class="result-text">' + item + '</div>';
+}
+
+function drawMulti() {
+  if (!watchVal || !threatVal) return;
+  const wt = watchType(watchVal);
+  const tt = threatType(threatVal);
+  const pool = tables[wt][tt];
+  const count = Math.min(parseInt(document.getElementById('multi-count').value), pool.length);
+  const used = new Set();
+  const picks = [];
+  while (picks.length < count) {
+    const idx = Math.floor(Math.random() * pool.length);
+    if (!used.has(idx)) { used.add(idx); picks.push(pool[idx]); }
+  }
+  const area = document.getElementById('result-area');
+  area.className = 'result-card ' + tt + '-card';
+  area.innerHTML = '<div class="multi-results">' + picks.map(p =>
+    '<div class="multi-item">' + p + '</div>'
+  ).join('') + '</div>';
+}
+
+function toggleFullTable() {
+  const area = document.getElementById('full-table-area');
+  const link = document.querySelector('.toggle-link');
+  if (area.style.display !== 'none') {
+    area.style.display = 'none';
+    link.textContent = 'Show full tables';
+    return;
+  }
+  area.style.display = 'block';
+  link.textContent = 'Hide full tables';
+  buildFullTables();
+}
+
+let tablesBuilt = false;
+function buildFullTables() {
+  if (tablesBuilt) return;
+  tablesBuilt = true;
+  const grid = document.getElementById('table-grid');
+  const watchTypes = ['peace','order','nature'];
+  const threatTypes = ['safe','mild','haz'];
+  const threatHeads = { safe: 'Safe', mild: 'Mild Danger', haz: 'Hazardous' };
+  const watchHeads = { peace: 'Peace', order: 'Order', nature: 'Nature' };
+  watchTypes.forEach(wt => {
+    threatTypes.forEach(tt => {
+      const wrap = document.createElement('div');
+      const heading = document.createElement('div');
+      heading.style.cssText = 'font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;margin-top:1rem;';
+      const watchCol = { peace: '#8ab48a', order: '#8a9ab4', nature: '#b4a08a' };
+      const threatCol = { safe: '#8ab48a', mild: '#c8b97a', haz: '#b48a8a' };
+      heading.innerHTML =
+        '<span style="color:' + watchCol[wt] + '">' + watchHeads[wt] + '</span>' +
+        '<span style="color:#444"> · </span>' +
+        '<span style="color:' + threatCol[tt] + '">' + threatHeads[tt] + '</span>' +
+        '<span style="color:#555;font-size:0.7rem;"> (' + tables[wt][tt].length + ')</span>';
+      wrap.appendChild(heading);
+      const table = document.createElement('table');
+      table.className = 'full-table';
+      const tbody = document.createElement('tbody');
+      tables[wt][tt].forEach(item => {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.textContent = item;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      grid.appendChild(wrap);
+    });
+  });
+}
+</script>
+</body>
+</html>

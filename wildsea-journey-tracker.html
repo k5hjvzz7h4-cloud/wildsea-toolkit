@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wildsea Journey Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #172225; color: #e8e4d8; max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.6; }
+
+  h1 { font-size: 1.8rem; font-weight: normal; letter-spacing: 0.05em; color: #BFDFE9; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #7a8e96; margin-bottom: 1.75rem; font-style: italic; }
+
+  /* ── Top bar ── */
+  .top-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .action-btn { padding: 8px 20px; border: 1px solid #4a6570; background: #253338; color: #BFDFE9; font-family: Georgia, serif; font-size: 0.9rem; cursor: pointer; letter-spacing: 0.05em; transition: all 0.14s; }
+  .action-btn:hover { background: #2a3d44; border-color: #BFDFE9; }
+  .action-btn:active { transform: scale(0.97); }
+  .action-btn.danger { border-color: #7a4a2a; color: #b47a50; background: #1e1810; }
+  .action-btn.danger:hover { background: #2a2018; border-color: #b47a50; }
+
+  /* ── Journey list sidebar feel ── */
+  .journey-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
+
+  /* ── Journey card ── */
+  .journey-card { background: #1D2D31; border: 1px solid #3a5058; transition: border-color 0.15s; }
+  .journey-card.active { border-color: #5a8898; }
+  .journey-card.completed { opacity: 0.45; filter: grayscale(0.4); }
+  .journey-card.completed .card-header { cursor: pointer; }
+
+  .card-header { display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; border-bottom: 1px solid #2e3f45; cursor: default; user-select: none; }
+  .journey-card.collapsed .card-header { border-bottom: none; cursor: pointer; }
+  .card-title-wrap { flex: 1; display: flex; align-items: baseline; gap: 8px; }
+  .card-title { font-size: 1rem; color: #e8e4d8; background: transparent; border: none; font-family: Georgia, serif; flex: 1; outline: none; padding: 2px 4px; }
+  .card-title:focus { background: #253338; color: #e8e4d8; }
+  .card-title::placeholder { color: #4a6570; font-style: italic; }
+  .card-status-badge { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.14em; padding: 2px 8px; border: 1px solid; }
+  .badge-active { border-color: #5a8898; color: #5a8898; }
+  .badge-complete { border-color: #4a6a30; color: #7a9a50; }
+  .badge-draft { border-color: #3a5058; color: #6a7e86; }
+
+  .card-actions { display: flex; gap: 6px; align-items: center; }
+  .icon-btn { background: none; border: 1px solid transparent; color: #5a7078; font-family: Georgia, serif; font-size: 0.78rem; cursor: pointer; padding: 3px 8px; transition: all 0.13s; white-space: nowrap; }
+  .icon-btn:hover { border-color: #3a5058; color: #9ab0ba; }
+  .icon-btn.mark-done { color: #5a8a50; }
+  .icon-btn.mark-done:hover { border-color: #4a6a30; color: #7a9a50; }
+  .icon-btn.del-btn { color: #7a4a2a; }
+  .icon-btn.del-btn:hover { border-color: #7a4a2a; color: #b47a50; }
+  .collapse-arrow { font-size: 0.7rem; color: #5a7078; margin-left: 4px; transition: transform 0.15s; display: inline-block; }
+  .journey-card.collapsed .collapse-arrow { transform: rotate(-90deg); }
+
+  .card-body { padding: 1rem 1.1rem 1.1rem; }
+
+  /* ── Pip Track ── */
+  .track-section { margin-bottom: 1.25rem; }
+  .track-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.16em; color: #6a7e86; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+  .track-controls { display: flex; align-items: center; gap: 6px; }
+  .track-adj { background: none; border: 1px solid #3a5058; color: #6a7e86; font-family: Georgia, serif; font-size: 0.85rem; cursor: pointer; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.12s; line-height: 1; }
+  .track-adj:hover { border-color: #889eaa; color: #9ab0ba; }
+  .track-count { font-size: 0.72rem; color: #5a7078; min-width: 24px; text-align: center; }
+
+  .pip-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .pip { width: 26px; height: 26px; border: 1.5px solid #4a6570; border-radius: 50%; background: transparent; transition: background 0.14s, border-color 0.14s; cursor: default; flex-shrink: 0; }
+  .pip.filled { background: #5a8898; border-color: #5a8898; }
+  .pip.filled-double { background: #BFDFE9; border-color: #BFDFE9; }
+  .pip.overflow { border-color: #7a4a2a; background: #7a4a2a; }
+
+  /* ── Location row ── */
+  .locations-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .location-arrow { color: #5a7078; font-size: 1.1rem; padding-top: 0.55rem; text-align: center; }
+  .location-block { display: flex; flex-direction: column; gap: 4px; }
+  .location-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.14em; color: #6a7e86; }
+  .location-name { font-size: 0.95rem; background: transparent; border: none; border-bottom: 1px solid #2e3f45; color: #e8e4d8; font-family: Georgia, serif; width: 100%; padding: 3px 0; outline: none; transition: border-color 0.13s; }
+  .location-name:focus { border-bottom-color: #5a8898; }
+  .location-name::placeholder { color: #4a6570; font-style: italic; }
+  .note-link-row { display: flex; align-items: center; gap: 5px; }
+  .note-toggle { background: none; border: none; color: #4a6570; cursor: pointer; font-size: 0.85rem; padding: 0 2px; transition: color 0.12s; line-height: 1; }
+  .note-toggle:hover { color: #889eaa; }
+  .note-toggle.open { color: #889eaa; transform: rotate(90deg); display: inline-block; }
+  .note-link-wrap { overflow: hidden; transition: max-height 0.2s ease, opacity 0.2s; max-height: 0; opacity: 0; }
+  .note-link-wrap.open { max-height: 40px; opacity: 1; }
+  .note-link-input { font-size: 0.8rem; background: transparent; border: none; border-bottom: 1px dashed #3a5058; color: #6a8aba; font-family: Georgia, serif; width: 100%; padding: 2px 0; outline: none; }
+  .note-link-input:focus { border-bottom-color: #6a8aba; }
+  .note-link-input::placeholder { color: #3a5058; font-style: italic; }
+  .note-go-btn { font-size: 0.75rem; color: #6a8aba; background: none; border: none; cursor: pointer; text-decoration: underline; white-space: nowrap; padding: 0; }
+  .note-go-btn:hover { color: #BFDFE9; }
+
+  /* ── Events list ── */
+  .events-section { }
+  .events-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.16em; color: #6a7e86; margin-bottom: 0.6rem; display: flex; align-items: center; justify-content: space-between; }
+  .events-label span { font-size: 0.72rem; color: #5a7078; font-style: italic; text-transform: none; letter-spacing: 0; }
+  .events-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 0.75rem; }
+
+  .event-row { display: flex; align-items: flex-start; gap: 8px; background: #192c30; border: 1px solid #2a3f45; padding: 7px 10px; }
+  .pip-toggle { display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-top: 2px; }
+  .pip-opt { width: 20px; height: 20px; border: 1.5px solid #4a6570; border-radius: 50%; background: transparent; cursor: pointer; transition: all 0.12s; flex-shrink: 0; }
+  .pip-opt:hover { border-color: #889eaa; }
+  .pip-opt.sel-1 { background: #5a8898; border-color: #5a8898; }
+  .pip-opt.sel-2 { background: #5a8898; border-color: #5a8898; }
+  .pip-toggle-sep { color: #3a5058; font-size: 0.75rem; }
+  .event-text { flex: 1; background: transparent; border: none; color: #e8e4d8; font-family: Georgia, serif; font-size: 0.9rem; resize: vertical; outline: none; line-height: 1.5; min-height: 1.5em; }
+  .event-text::placeholder { color: #3a5058; font-style: italic; }
+  .event-remove { background: none; border: none; color: #3a5058; cursor: pointer; font-size: 1rem; padding: 0 2px; line-height: 1; align-self: flex-start; transition: color 0.12s; margin-top: 1px; }
+  .event-remove:hover { color: #b47a50; }
+
+  .add-event-btn { padding: 6px 16px; border: 1px dashed #3a5058; background: transparent; color: #5a7078; font-family: Georgia, serif; font-size: 0.85rem; cursor: pointer; transition: all 0.14s; letter-spacing: 0.04em; width: 100%; text-align: left; }
+  .add-event-btn:hover { border-color: #5a8898; color: #889eaa; background: #1a2c30; }
+
+  /* ── Event wrapper (row + collapsible note) ── */
+  .event-wrapper { display: flex; flex-direction: column; }
+  .event-note-wrap { margin-left: 60px; padding: 4px 0 4px 10px; border-left: 1px dashed #2e3f45; }
+  .event-note-wrap.open { max-height: 40px; opacity: 1; }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #5a7078; font-style: italic; border: 1px dashed #2e3f45; }
+  .empty-state p { margin-bottom: 1rem; }
+
+  /* ── Footer ── */
+  .page-footer { padding: 0.75rem 0 0.5rem; font-size: 0.78rem; color: #5a7078; font-style: italic; border-top: 1px solid #2e3f45; margin-top: 2rem; }
+
+  /* ── Separators ── */
+  .section-divider { border: none; border-top: 1px solid #2e3f45; margin: 1rem 0; }
+</style>
+</head>
+<body>
+<!-- ── Wildsea Nav ─────────────────────────────────────────── -->
+<style>
+.ws-nav-btn{position:fixed;top:14px;left:14px;z-index:1000;width:36px;height:36px;background:#1D2D31;border:1px solid #3a5058;color:#BFDFE9;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,border-color .14s;-webkit-tap-highlight-color:transparent;}
+.ws-nav-btn:hover{background:#253338;border-color:#BFDFE9;}
+.ws-nav-back{left:58px;font-size:.85rem;text-decoration:none;font-family:Georgia,serif;letter-spacing:.04em;}
+.ws-nav-drawer{position:fixed;top:0;left:0;z-index:999;width:260px;max-width:85vw;height:100%;background:#1D2D31;border-right:1px solid #3a5058;transform:translateX(-100%);transition:transform .22s ease;overflow-y:auto;}
+.ws-nav-drawer.open{transform:translateX(0);}
+.ws-nav-overlay{display:none;position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.45);}
+.ws-nav-overlay.open{display:block;}
+.ws-nav-header{padding:1.1rem 1.25rem .9rem;border-bottom:1px solid #2e3f45;display:flex;align-items:center;justify-content:space-between;}
+.ws-nav-title{font-family:Georgia,serif;font-size:1rem;color:#BFDFE9;letter-spacing:.06em;font-weight:normal;}
+.ws-nav-close{background:none;border:none;color:#5a7078;font-size:1.1rem;cursor:pointer;padding:2px 6px;transition:color .13s;}
+.ws-nav-close:hover{color:#BFDFE9;}
+.ws-nav-section{font-size:.6rem;text-transform:uppercase;letter-spacing:.2em;color:#3a5a68;padding:.9rem 1.25rem .35rem;font-family:Georgia,serif;}
+.ws-nav-link{display:flex;align-items:center;gap:.75rem;padding:.6rem 1.25rem;font-family:Georgia,serif;font-size:.88rem;color:#9ab0ba;text-decoration:none;transition:background .12s,color .12s;letter-spacing:.02em;}
+.ws-nav-link:hover{background:#253338;color:#e8e4d8;}
+.ws-nav-link.current{color:#BFDFE9;background:#1a2c32;}
+.ws-nav-glyph{font-size:.85rem;width:16px;text-align:center;flex-shrink:0;opacity:.7;}
+.ws-nav-spacer{height:1px;background:#2e3f45;margin:.5rem 1.25rem;}
+body{padding-top:64px !important;}
+</style>
+<button class="ws-nav-btn" id="ws-menu-btn" aria-label="Open menu">☰</button>
+<a class="ws-nav-btn ws-nav-back" href="index.html" aria-label="Home">←</a>
+<div class="ws-nav-overlay" id="ws-overlay"></div>
+<nav class="ws-nav-drawer" id="ws-drawer">
+  <div class="ws-nav-header">
+    <span class="ws-nav-title">Wildsea</span>
+    <button class="ws-nav-close" id="ws-close">✕</button>
+  </div>
+  <div class="ws-nav-section">Trackers</div>
+  <a class="ws-nav-link" href="wildsea-tracker-slim.html"><span class="ws-nav-glyph">◈</span>Session Tracker</a>
+  <a class="ws-nav-link" href="wildsea-journey-tracker.html"><span class="ws-nav-glyph">◇</span>Journey Tracker</a>
+  <a class="ws-nav-link" href="wildsea-character-sheet.html"><span class="ws-nav-glyph">▣</span>Character Sheet</a>
+  <div class="ws-nav-spacer"></div>
+  <div class="ws-nav-section">Generators</div>
+  <a class="ws-nav-link" href="wildsea-locations-traders-npcs.html"><span class="ws-nav-glyph">▤</span>Locations</a>
+  <a class="ws-nav-link" href="wildsea-creatures.html"><span class="ws-nav-glyph">◬</span>Creatures</a>
+  <a class="ws-nav-link" href="wildsea-random-items.html"><span class="ws-nav-glyph">○</span>Items</a>
+  <a class="ws-nav-link" href="wildsea-relics.html"><span class="ws-nav-glyph">◎</span>Relics</a>
+  <a class="ws-nav-link" href="wildsea-ships.html"><span class="ws-nav-glyph">△</span>Ships</a>
+  <a class="ws-nav-link" href="wildsea-encounters.html"><span class="ws-nav-glyph">▦</span>Encounters</a>
+</nav>
+<script>
+(function(){
+  var btn=document.getElementById('ws-menu-btn'),
+      drawer=document.getElementById('ws-drawer'),
+      overlay=document.getElementById('ws-overlay'),
+      close=document.getElementById('ws-close');
+  function open(){drawer.classList.add('open');overlay.classList.add('open');}
+  function shut(){drawer.classList.remove('open');overlay.classList.remove('open');}
+  btn.addEventListener('click',open);
+  close.addEventListener('click',shut);
+  overlay.addEventListener('click',shut);
+  var cur=location.pathname.split('/').pop()||'index.html';
+  document.querySelectorAll('.ws-nav-link').forEach(function(a){
+    if(a.getAttribute('href')===cur)a.classList.add('current');
+  });
+})();
+</script>
+<!-- ── /Wildsea Nav ─────────────────────────────────────────── -->
+
+<h1>Journey Tracker</h1>
+<p class="subtitle">Record passages through the canopy — where you started, what you found, where you ended up.</p>
+
+<div class="top-bar">
+  <button class="action-btn" onclick="newJourney()">+ New Journey</button>
+</div>
+
+<div class="empty-state" id="emptyState" style="display:none">
+  <p>No journeys recorded yet.</p>
+  <button class="action-btn" onclick="newJourney()">Begin your first journey</button>
+</div>
+<div class="journey-list" id="journeyList"></div>
+
+<div class="page-footer">Wildsea Journey Tracker — data saved locally in your browser.</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'wildsea-journeys-v1';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(journeys));
+}
+
+let journeys = loadData();
+let nextId = journeys.reduce((m, j) => Math.max(m, j.id || 0), 0) + 1;
+
+function newJourney() {
+  const j = {
+    id: nextId++,
+    title: '',
+    completed: false,
+    collapsed: false,
+    trackLength: 5,
+    startName: '',
+    startNote: '',
+    startNoteOpen: false,
+    endName: '',
+    endNote: '',
+    endNoteOpen: false,
+    events: []
+  };
+  journeys.unshift(j);
+  saveData();
+  render();
+  // Focus the title of the new card
+  setTimeout(() => {
+    const inp = document.querySelector(`[data-journey-id="${j.id}"] .card-title`);
+    if (inp) inp.focus();
+  }, 50);
+}
+
+// ── Pip fill logic ────────────────────────────────────────────────────────────
+
+function getPipFill(j) {
+  // Returns array of 'empty'|'single'|'double'|'overflow' for each pip
+  let pips = Array(j.trackLength).fill('empty');
+  let cursor = 0;
+  for (const ev of j.events) {
+    const cost = ev.pips || 1;
+    for (let i = 0; i < cost; i++) {
+      if (cursor < j.trackLength) {
+        pips[cursor] = 'single'; // both single and double pips use same fill colour
+      }
+      cursor++;
+    }
+  }
+  return { pips, overflow: Math.max(0, cursor - j.trackLength) };
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function render() {
+  const list = document.getElementById('journeyList');
+  const empty = document.getElementById('emptyState');
+
+  // Sort: active first (by insertion, newest first), then completed
+  const active = journeys.filter(j => !j.completed);
+  const done   = journeys.filter(j => j.completed);
+  const sorted = [...active, ...done];
+
+  empty.style.display = sorted.length === 0 ? '' : 'none';
+  list.innerHTML = '';
+  if (sorted.length === 0) return;
+
+  for (const j of sorted) {
+    list.appendChild(buildCard(j));
+  }
+
+  // Size textareas now they are in the DOM — no setTimeout needed
+  document.querySelectorAll('.event-text').forEach(ta => {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  });
+}
+
+function buildCard(j) {
+  const card = document.createElement('div');
+  card.className = 'journey-card' + (j.completed ? ' completed' : ' active') + (j.collapsed ? ' collapsed' : '');
+  card.dataset.journeyId = j.id;
+
+  // ── Header ──
+  const hdr = document.createElement('div');
+  hdr.className = 'card-header';
+
+  // Title
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'card-title-wrap';
+
+  const titleInp = document.createElement('input');
+  titleInp.type = 'text';
+  titleInp.className = 'card-title';
+  titleInp.value = j.title;
+  titleInp.placeholder = 'Name this journey…';
+  titleInp.oninput = e => { j.title = e.target.value; saveData(); };
+  titleInp.onclick = e => e.stopPropagation();
+
+  const badge = document.createElement('span');
+  badge.className = 'card-status-badge ' + (j.completed ? 'badge-complete' : (j.events.length ? 'badge-active' : 'badge-draft'));
+  badge.textContent = j.completed ? 'Complete' : (j.events.length ? 'Underway' : 'Planned');
+
+  titleWrap.appendChild(titleInp);
+  titleWrap.appendChild(badge);
+
+  // Arrow
+  const arrow = document.createElement('span');
+  arrow.className = 'collapse-arrow';
+  arrow.textContent = '▾';
+
+  // Actions
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
+
+  if (!j.completed) {
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'icon-btn mark-done';
+    doneBtn.textContent = '✓ Complete';
+    doneBtn.title = 'Mark journey as complete';
+    doneBtn.onclick = e => { e.stopPropagation(); markComplete(j.id); };
+    actions.appendChild(doneBtn);
+  } else {
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'icon-btn';
+    undoBtn.textContent = '↩ Reopen';
+    undoBtn.onclick = e => { e.stopPropagation(); reopenJourney(j.id); };
+    actions.appendChild(undoBtn);
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'icon-btn del-btn';
+  delBtn.textContent = '✕';
+  delBtn.title = 'Delete journey';
+  delBtn.onclick = e => { e.stopPropagation(); deleteJourney(j.id); };
+  actions.appendChild(delBtn);
+
+  hdr.appendChild(titleWrap);
+  hdr.appendChild(arrow);
+  hdr.appendChild(actions);
+
+  // Click header to collapse/expand
+  hdr.onclick = () => { j.collapsed = !j.collapsed; saveData(); render(); };
+  titleInp.onclick = e => e.stopPropagation(); // don't toggle when editing title
+
+  card.appendChild(hdr);
+
+  if (j.collapsed) { card.appendChild(hdr); return card; }
+
+  // ── Body ──
+  const body = document.createElement('div');
+  body.className = 'card-body';
+
+  // Pip track
+  body.appendChild(buildPipTrack(j));
+
+  // Divider
+  const div1 = document.createElement('hr');
+  div1.className = 'section-divider';
+  body.appendChild(div1);
+
+  // Locations
+  body.appendChild(buildLocations(j));
+
+  // Divider
+  const div2 = document.createElement('hr');
+  div2.className = 'section-divider';
+  body.appendChild(div2);
+
+  // Events
+  body.appendChild(buildEvents(j));
+
+  card.appendChild(hdr);
+  card.appendChild(body);
+  return card;
+}
+
+// ── Pip Track ────────────────────────────────────────────────────────────────
+
+function buildPipTrack(j) {
+  const wrap = document.createElement('div');
+  wrap.className = 'track-section';
+
+  const labelRow = document.createElement('div');
+  labelRow.className = 'track-label';
+  labelRow.textContent = 'Journey Track';
+
+  const controls = document.createElement('div');
+  controls.className = 'track-controls';
+
+  const minus = document.createElement('button');
+  minus.className = 'track-adj';
+  minus.textContent = '−';
+  minus.title = 'Shorten track';
+  minus.onclick = () => { if (j.trackLength > 1) { j.trackLength--; saveData(); render(); } };
+
+  const count = document.createElement('span');
+  count.className = 'track-count';
+  count.textContent = j.trackLength;
+
+  const plus = document.createElement('button');
+  plus.className = 'track-adj';
+  plus.textContent = '+';
+  plus.title = 'Lengthen track';
+  plus.onclick = () => { j.trackLength++; saveData(); render(); };
+
+  controls.appendChild(minus);
+  controls.appendChild(count);
+  controls.appendChild(plus);
+  labelRow.appendChild(controls);
+  wrap.appendChild(labelRow);
+
+  const pipRow = document.createElement('div');
+  pipRow.className = 'pip-row';
+
+  const { pips } = getPipFill(j);
+  for (let i = 0; i < j.trackLength; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'pip';
+    if (pips[i] === 'single') pip.classList.add('filled');
+    pipRow.appendChild(pip);
+  }
+
+  // Overflow indicator
+  const { overflow } = getPipFill(j);
+  if (overflow > 0) {
+    const ov = document.createElement('span');
+    ov.style.cssText = 'font-size:0.75rem;color:#b47a50;font-style:italic;margin-left:6px;';
+    ov.textContent = `+${overflow} over track`;
+    pipRow.appendChild(ov);
+  }
+
+  wrap.appendChild(pipRow);
+  return wrap;
+}
+
+// ── Locations ────────────────────────────────────────────────────────────────
+
+function buildLocationBlock(j, which) {
+  // which = 'start' | 'end'
+  const block = document.createElement('div');
+  block.className = 'location-block';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'location-label';
+  lbl.textContent = which === 'start' ? 'Origin' : 'Destination';
+  block.appendChild(lbl);
+
+  const nameInp = document.createElement('input');
+  nameInp.type = 'text';
+  nameInp.className = 'location-name';
+  nameInp.value = j[which + 'Name'];
+  nameInp.placeholder = which === 'start' ? 'Where from…' : 'Where to…';
+  nameInp.oninput = e => { j[which + 'Name'] = e.target.value; saveData(); };
+  block.appendChild(nameInp);
+
+  // Note link row
+  const noteRow = document.createElement('div');
+  noteRow.className = 'note-link-row';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'note-toggle' + (j[which + 'NoteOpen'] ? ' open' : '');
+  toggleBtn.title = 'Toggle note link';
+  toggleBtn.textContent = '▶';
+  toggleBtn.onclick = () => {
+    j[which + 'NoteOpen'] = !j[which + 'NoteOpen'];
+    saveData();
+    render();
+  };
+  noteRow.appendChild(toggleBtn);
+
+  const noteLinkWrap = document.createElement('div');
+  noteLinkWrap.className = 'note-link-wrap' + (j[which + 'NoteOpen'] ? ' open' : '');
+
+  const noteInp = document.createElement('input');
+  noteInp.type = 'text';
+  noteInp.className = 'note-link-input';
+  noteInp.value = j[which + 'Note'];
+  noteInp.placeholder = 'Note file path…';
+  noteInp.oninput = e => { j[which + 'Note'] = e.target.value; saveData(); };
+  noteLinkWrap.appendChild(noteInp);
+
+  if (j[which + 'Note']) {
+    const goBtn = document.createElement('button');
+    goBtn.className = 'note-go-btn';
+    goBtn.textContent = 'open →';
+    goBtn.onclick = () => { window.open(`obsidian://open?vault=Wildsea%20v3&file=${encodeURIComponent(j[which + 'Note'])}`, '_blank'); };
+    noteLinkWrap.appendChild(goBtn);
+  }
+
+  noteRow.appendChild(noteLinkWrap);
+  block.appendChild(noteRow);
+
+  return block;
+}
+
+function buildLocations(j) {
+  const grid = document.createElement('div');
+  grid.className = 'locations-row';
+
+  grid.appendChild(buildLocationBlock(j, 'start'));
+
+  const arr = document.createElement('div');
+  arr.className = 'location-arrow';
+  arr.textContent = '→';
+  grid.appendChild(arr);
+
+  grid.appendChild(buildLocationBlock(j, 'end'));
+
+  return grid;
+}
+
+// ── Events ───────────────────────────────────────────────────────────────────
+
+function buildEvents(j) {
+  const wrap = document.createElement('div');
+  wrap.className = 'events-section';
+
+  const labelRow = document.createElement('div');
+  labelRow.className = 'events-label';
+  const leftLabel = document.createElement('span');
+  leftLabel.style.cssText = 'font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:#6a7e86;';
+  leftLabel.textContent = 'Waypoints & Events';
+
+  const hint = document.createElement('span');
+  const usedPips = j.events.reduce((sum, ev) => sum + (ev.pips || 1), 0);
+  hint.textContent = `${usedPips} / ${j.trackLength} pips used`;
+  labelRow.appendChild(leftLabel);
+  labelRow.appendChild(hint);
+  wrap.appendChild(labelRow);
+
+  const list = document.createElement('div');
+  list.className = 'events-list';
+
+  for (let i = 0; i < j.events.length; i++) {
+    list.appendChild(buildEventRow(j, i));
+  }
+
+  wrap.appendChild(list);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-event-btn';
+  addBtn.textContent = '+ Add waypoint or event';
+  addBtn.onclick = () => {
+    j.events.push({ pips: 1, text: '', note: '', noteOpen: false });
+    saveData();
+    render();
+    // Focus new event textarea
+    setTimeout(() => {
+      const card = document.querySelector(`[data-journey-id="${j.id}"]`);
+      if (card) {
+        const rows = card.querySelectorAll('.event-text');
+        if (rows.length) rows[rows.length - 1].focus();
+      }
+    }, 40);
+  };
+  wrap.appendChild(addBtn);
+
+  return wrap;
+}
+
+function buildEventRow(j, idx) {
+  const ev = j.events[idx];
+  // Ensure note fields exist on older saved events
+  if (ev.note === undefined) ev.note = '';
+  if (ev.noteOpen === undefined) ev.noteOpen = false;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'event-wrapper';
+
+  const row = document.createElement('div');
+  row.className = 'event-row';
+
+  // Pip selector: two circles, click to toggle
+  const pipToggle = document.createElement('div');
+  pipToggle.className = 'pip-toggle';
+  pipToggle.title = 'Select 1 or 2 pips for this event';
+
+  const p1 = document.createElement('div');
+  p1.className = 'pip-opt' + (ev.pips >= 1 ? ' sel-1' : '');
+  p1.title = '1 pip';
+  p1.onclick = () => { ev.pips = 1; saveData(); render(); };
+
+  const sep = document.createElement('span');
+  sep.className = 'pip-toggle-sep';
+  sep.textContent = '/';
+
+  const p2 = document.createElement('div');
+  p2.className = 'pip-opt' + (ev.pips === 2 ? ' sel-1' : '');
+  p2.title = '2 pips';
+  p2.onclick = () => { ev.pips = 2; saveData(); render(); };
+
+  pipToggle.appendChild(p1);
+  pipToggle.appendChild(sep);
+  pipToggle.appendChild(p2);
+  row.appendChild(pipToggle);
+
+  // Text area
+  const ta = document.createElement('textarea');
+  ta.className = 'event-text';
+  ta.value = ev.text;
+  ta.placeholder = 'What happened here…';
+  ta.rows = 1;
+  ta.oninput = e => {
+    ev.text = e.target.value;
+    e.target.style.height = 'auto';
+    e.target.style.height = e.target.scrollHeight + 'px';
+    saveData();
+  };
+  row.appendChild(ta);
+
+  // Note link toggle button
+  const noteToggle = document.createElement('button');
+  noteToggle.className = 'note-toggle' + (ev.noteOpen ? ' open' : '');
+  noteToggle.title = 'Toggle note link';
+  noteToggle.textContent = '▶';
+  noteToggle.onclick = () => {
+    ev.noteOpen = !ev.noteOpen;
+    saveData();
+    render();
+  };
+  row.appendChild(noteToggle);
+
+  // Remove
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'event-remove';
+  rmBtn.textContent = '×';
+  rmBtn.title = 'Remove this event';
+  rmBtn.onclick = () => {
+    const i = j.events.indexOf(ev);
+    if (i !== -1) j.events.splice(i, 1);
+    saveData();
+    render();
+  };
+  row.appendChild(rmBtn);
+
+  wrapper.appendChild(row);
+
+  // Collapsible note link row
+  const noteLinkWrap = document.createElement('div');
+  noteLinkWrap.className = 'note-link-wrap event-note-wrap' + (ev.noteOpen ? ' open' : '');
+
+  const noteInp = document.createElement('input');
+  noteInp.type = 'text';
+  noteInp.className = 'note-link-input';
+  noteInp.value = ev.note;
+  noteInp.placeholder = 'Note file path…';
+  noteInp.oninput = e => { ev.note = e.target.value; saveData(); };
+  noteLinkWrap.appendChild(noteInp);
+
+  if (ev.note) {
+    const goBtn = document.createElement('button');
+    goBtn.className = 'note-go-btn';
+    goBtn.textContent = 'open →';
+    goBtn.onclick = () => { window.open(`obsidian://open?vault=Wildsea%20v3&file=${encodeURIComponent(ev.note)}`, '_blank'); };
+    noteLinkWrap.appendChild(goBtn);
+  }
+
+  wrapper.appendChild(noteLinkWrap);
+
+  return wrapper;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+function markComplete(id) {
+  const j = journeys.find(x => x.id === id);
+  if (!j) return;
+  j.completed = true;
+  j.collapsed = true;
+  saveData();
+  render();
+}
+
+function reopenJourney(id) {
+  const j = journeys.find(x => x.id === id);
+  if (!j) return;
+  j.completed = false;
+  j.collapsed = false;
+  saveData();
+  render();
+}
+
+function deleteJourney(id) {
+  const j = journeys.find(x => x.id === id);
+  const name = j?.title || 'this journey';
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  journeys = journeys.filter(x => x.id !== id);
+  saveData();
+  render();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+render();
+</script>
+</body>
+</html>
