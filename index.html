@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#172225">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wildsea">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Wildsea — GM Toolkit</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, serif;
+    background: #172225;
+    color: #e8e4d8;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  }
+
+  /* ── Header ── */
+  .site-header {
+    padding: 2.5rem 1.5rem 0;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .site-title {
+    font-size: 2rem;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    color: #BFDFE9;
+    line-height: 1.1;
+  }
+  .site-subtitle {
+    font-size: 0.88rem;
+    color: #4a6a78;
+    font-style: italic;
+    margin-top: 0.3rem;
+    letter-spacing: 0.04em;
+  }
+  .header-rule {
+    border: none;
+    border-top: 1px solid #2e3f45;
+    margin: 1.5rem 0 0;
+  }
+
+  /* ── Main layout ── */
+  .main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* ── Section headings ── */
+  .section-heading {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: #4a6a78;
+    margin-bottom: 0.9rem;
+    margin-top: 2.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #1e3038;
+  }
+  .section-heading:first-of-type {
+    margin-top: 0;
+  }
+
+  /* ── Tool grid ── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: #1a2e34;
+    border: 1px solid #1a2e34;
+    margin-bottom: 1px;
+  }
+
+  .tool-card {
+    display: block;
+    background: #1D2D31;
+    padding: 1.1rem 1.25rem 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.14s;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .tool-card:hover,
+  .tool-card:focus {
+    background: #243d44;
+    outline: none;
+  }
+  .tool-card:active {
+    background: #2a4550;
+  }
+
+  .tool-glyph {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    line-height: 1;
+    color: #c8d8e0;
+    font-style: normal;
+  }
+  .tool-name {
+    font-size: 0.98rem;
+    color: #d8d0c4;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .tool-desc {
+    font-size: 0.76rem;
+    color: #5a7a86;
+    font-style: italic;
+    line-height: 1.45;
+    display: block;
+  }
+
+  /* Tag badges on cards */
+  .tool-tag {
+    display: inline-block;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    border: 1px solid #2e3f45;
+    padding: 1px 6px;
+    color: #4a6a78;
+    margin-top: 0.55rem;
+    vertical-align: middle;
+  }
+  .tool-tag.live    { border-color: #3a5a40; color: #5a8a60; }
+  .tool-tag.gen     { border-color: #3a5a7a; color: #5a7aaa; }
+  .tool-tag.ref     { border-color: #5a4a3a; color: #8a7060; }
+
+  /* Arrow on card */
+  .tool-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #2e4a54;
+    font-size: 0.75rem;
+    transition: color 0.14s, right 0.14s;
+  }
+  .tool-card:hover .tool-arrow,
+  .tool-card:focus .tool-arrow {
+    color: #5a8898;
+    right: 0.85rem;
+  }
+
+  /* Full-width card variant */
+  .tool-card.wide {
+    grid-column: 1 / -1;
+  }
+
+  /* ── Install banner ── */
+  .install-banner {
+    display: none;
+    margin-top: 2.5rem;
+    background: #1D2D31;
+    border: 1px solid #2e3f45;
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+    color: #7a9aaa;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .install-banner.visible { display: flex; }
+  .install-banner p { flex: 1; line-height: 1.55; }
+  .install-banner strong { color: #BFDFE9; font-weight: normal; }
+  .install-btn {
+    font-family: Georgia, serif;
+    font-size: 0.82rem;
+    padding: 7px 18px;
+    border: 1px solid #4a6570;
+    background: #253338;
+    color: #BFDFE9;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.14s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .install-btn:hover { background: #2a3d44; border-color: #BFDFE9; }
+  .install-dismiss {
+    font-size: 0.72rem;
+    color: #3a5058;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .install-dismiss:hover { color: #7a9aaa; }
+
+  /* ── iOS hint ── */
+  .ios-hint {
+    display: none;
+    margin-top: 2.5rem;
+    background: #1D2D31;
+    border: 1px solid #2e3f45;
+    padding: 1rem 1.25rem;
+    font-size: 0.82rem;
+    color: #7a9aaa;
+    line-height: 1.6;
+  }
+  .ios-hint.visible { display: block; }
+  .ios-hint strong { color: #BFDFE9; font-weight: normal; }
+  .ios-hint .share-icon {
+    display: inline-block;
+    border: 1px solid #4a6a78;
+    padding: 0 5px;
+    font-size: 0.75rem;
+    margin: 0 2px;
+    color: #6a9aaa;
+  }
+
+  /* ── Footer ── */
+  .site-footer {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 1.5rem 2rem;
+    font-size: 0.72rem;
+    color: #2e4a54;
+    font-style: italic;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* ── Offline indicator ── */
+  .offline-bar {
+    display: none;
+    background: #2a1e14;
+    border-bottom: 1px solid #5a3a20;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.78rem;
+    color: #b47a50;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .offline-bar.visible { display: block; }
+
+  /* ── Responsive ── */
+  @media (max-width: 520px) {
+    .site-title { font-size: 1.6rem; }
+    .tool-grid { grid-template-columns: 1fr; }
+    .tool-card.wide { grid-column: 1; }
+    .tool-arrow { display: none; }
+    .main { padding: 1.5rem 1rem 4rem; }
+    .site-header { padding: 2rem 1rem 0; }
+    .site-footer { padding: 0 1rem 2rem; }
+  }
+
+  @media (min-width: 680px) {
+    .tool-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="offline-bar" id="offline-bar">You are offline — all generators still work</div>
+
+<header class="site-header">
+  <h1 class="site-title">Wildsea</h1>
+  <p class="site-subtitle">GM Toolkit — The Rustling Sea</p>
+  <hr class="header-rule">
+</header>
+
+<main class="main">
+
+  <!-- TRACKERS -->
+  <h2 class="section-heading">Trackers</h2>
+
+  <div class="tool-grid">
+    <a class="tool-card" href="wildsea-tracker-slim_v2.html">
+      <span class="tool-glyph">◈</span>
+      <span class="tool-name">Session Tracker</span>
+      <span class="tool-desc">Progress tracks, factions & drives</span>
+      <span class="tool-tag live">live play</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card" href="wildsea-journey-tracker_v2.html">
+      <span class="tool-glyph">◇</span>
+      <span class="tool-name">Journey Tracker</span>
+      <span class="tool-desc">Waypoints, charts & travel progress</span>
+      <span class="tool-tag live">live play</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card wide" href="wildsea-character-sheet_v3.html">
+      <span class="tool-glyph">▣</span>
+      <span class="tool-name">Character Sheet</span>
+      <span class="tool-desc">Six character slots — edges, skills, aspects, resources, drives, mires</span>
+      <span class="tool-tag live">live play</span>
+      <span class="tool-arrow">›</span>
+    </a>
+  </div>
+
+  <!-- GENERATORS -->
+  <h2 class="section-heading">Generators</h2>
+
+  <div class="tool-grid">
+    <a class="tool-card" href="wildsea-locations-traders-npcs.html">
+      <span class="tool-glyph">▤</span>
+      <span class="tool-name">Locations</span>
+      <span class="tool-desc">Settlements, traders & NPCs across all layers</span>
+      <span class="tool-tag gen">generator</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card" href="wildsea-creatures.html">
+      <span class="tool-glyph">◬</span>
+      <span class="tool-name">Creatures</span>
+      <span class="tool-desc">Beasts and hazards with full stat blocks</span>
+      <span class="tool-tag gen">generator</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card" href="wildsea-random-items_v2.html">
+      <span class="tool-glyph">○</span>
+      <span class="tool-name">Items</span>
+      <span class="tool-desc">Salvage, cargo, specimens & whispers</span>
+      <span class="tool-tag gen">generator</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card" href="wildsea-relics.html">
+      <span class="tool-glyph">◎</span>
+      <span class="tool-name">Relics</span>
+      <span class="tool-desc">Pre-Verdancy objects from a buried world</span>
+      <span class="tool-tag gen">generator</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card" href="wildsea-ships.html">
+      <span class="tool-glyph">△</span>
+      <span class="tool-name">Ships</span>
+      <span class="tool-desc">NPC chainsaw-vessels and their crews</span>
+      <span class="tool-tag gen">generator</span>
+      <span class="tool-arrow">›</span>
+    </a>
+    <a class="tool-card" href="wildsea-encounters.html">
+      <span class="tool-glyph">▦</span>
+      <span class="tool-name">Encounters</span>
+      <span class="tool-desc">Watch & threat tables by layer</span>
+      <span class="tool-tag ref">tables</span>
+      <span class="tool-arrow">›</span>
+    </a>
+  </div>
+
+</main>
+
+<!-- Install banner (Android/desktop PWA) -->
+<div class="install-banner" id="install-banner">
+  <p><strong>Add to home screen</strong> — install this toolkit as an app for quick access at the table, even offline.</p>
+  <button class="install-btn" id="install-btn">Install</button>
+  <span class="install-dismiss" id="install-dismiss" title="Dismiss">✕</span>
+</div>
+
+<!-- iOS hint -->
+<div class="ios-hint" id="ios-hint">
+  <strong>Add to Home Screen on iPhone/iPad:</strong> tap <span class="share-icon">⬆</span> Share in Safari, then choose <em>Add to Home Screen</em>. The toolkit installs as an app and works offline.
+</div>
+
+<footer class="site-footer">
+  <span>The Wildsea — Felix Isaacs / Mythworks</span>
+  <span id="cache-status"></span>
+</footer>
+
+<script>
+// ── Offline detection ──
+function updateOnlineStatus() {
+  document.getElementById('offline-bar').classList.toggle('visible', !navigator.onLine);
+}
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ── Service Worker registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => {
+        document.getElementById('cache-status').textContent = 'offline-ready';
+      })
+      .catch(err => {
+        console.warn('SW registration failed:', err);
+      });
+  });
+}
+
+// ── PWA install prompt (Android / desktop Chrome) ──
+let deferredPrompt = null;
+const installBanner = document.getElementById('install-banner');
+const installBtn    = document.getElementById('install-btn');
+const installDismiss = document.getElementById('install-dismiss');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Don't show if user dismissed before
+  if (!sessionStorage.getItem('install-dismissed')) {
+    installBanner.classList.add('visible');
+  }
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBanner.classList.remove('visible');
+});
+
+installDismiss.addEventListener('click', () => {
+  installBanner.classList.remove('visible');
+  sessionStorage.setItem('install-dismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  installBanner.classList.remove('visible');
+});
+
+// ── iOS hint (Safari only, not already installed) ──
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.navigator.standalone === true;
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+if (isIOS && !isInStandaloneMode && isSafari) {
+  document.getElementById('ios-hint').classList.add('visible');
+}
+</script>
+</body>
+</html>

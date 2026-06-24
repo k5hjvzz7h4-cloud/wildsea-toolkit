@@ -1,0 +1,25 @@
+{
+  "name": "Wildsea GM Toolkit",
+  "short_name": "Wildsea",
+  "description": "GM tools for The Wildsea — generators, trackers, and reference aids.",
+  "start_url": "/wildsea-toolkit/index.html",
+  "display": "standalone",
+  "background_color": "#172225",
+  "theme_color": "#172225",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/wildsea-toolkit/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/wildsea-toolkit/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "utilities"]
+}

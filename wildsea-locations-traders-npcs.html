@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wildsea Locations</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #172225; color: #e8e4d8; max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem; line-height: 1.6; }
+  h1 { font-size: 1.8rem; font-weight: normal; letter-spacing: 0.05em; color: #BFDFE9; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.9rem; color: #7a8e96; margin-bottom: 1.5rem; font-style: italic; }
+
+  /* Tab bar */
+  .tab-bar { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 1px solid #2e3f45; }
+  .tab-btn { font-family: Georgia, serif; font-size: 0.95rem; padding: 9px 26px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #6a8090; cursor: pointer; letter-spacing: 0.06em; transition: all 0.14s; position: relative; bottom: -1px; }
+  .tab-btn:hover { color: #9ab0ba; background: #1d2d31; }
+  .tab-btn.active { background: #172225; border-color: #2e3f45; color: #BFDFE9; border-bottom-color: #172225; }
+
+  /* Tab panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Filter bars */
+  .filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; border-bottom: 1px solid #2e3f45; padding-bottom: 1.25rem; }
+  .bar-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: #6a7e86; white-space: nowrap; margin-right: 4px; }
+  .f-btn { font-family: Georgia, serif; font-size: 0.88rem; padding: 6px 14px; border: 1px solid #3a5058; background: #253338; color: #9ab0ba; cursor: pointer; transition: all 0.14s; letter-spacing: 0.03em; }
+  .f-btn:hover { border-color: #889eaa; color: #889eaa; background: #2a3d44; }
+  .f-btn.active { background: #2a3d44; border-color: #889eaa; color: #889eaa; }
+  .f-btn.any { font-style: italic; }
+
+  /* Layer button active states */
+  .f-btn.layer-skies.active   { background: #1e2838; border-color: #5a7a9a; color: #8aaaca; }
+  .f-btn.layer-thrash.active  { background: #1e2c1e; border-color: #4a7a30; color: #7a9a50; }
+  .f-btn.layer-tangle.active  { background: #1a2a1e; border-color: #3a6a3a; color: #5a8a60; }
+  .f-btn.layer-sink.active    { background: #26241a; border-color: #7a6a30; color: #aa9040; }
+  .f-btn.layer-drown.active   { background: #26201a; border-color: #7a5030; color: #aa7040; }
+  .f-btn.layer-dark.active    { background: #241a24; border-color: #6a4a6a; color: #946090; }
+
+  /* Generate button */
+  .gen-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 1.75rem; }
+  .gen-btn { padding: 9px 26px; border: 1px solid #4a6570; background: #253338; color: #BFDFE9; font-family: Georgia, serif; font-size: 0.95rem; cursor: pointer; letter-spacing: 0.06em; transition: all 0.15s; }
+  .gen-btn:hover { background: #2a3d44; border-color: #BFDFE9; color: #BFDFE9; }
+  .gen-btn:active { transform: scale(0.97); }
+
+  /* ── Location card ── */
+  .loc-card { background: #1D2D31; border: 1px solid #3a5058; padding: 0; margin-bottom: 1.5rem; min-height: 80px; }
+  .loc-card.empty { padding: 2rem; color: #5a7078; font-style: italic; display: flex; align-items: center; }
+  .loc-header { padding: 1.4rem 1.5rem 1.1rem; border-bottom: 1px solid #2e3f45; }
+  .loc-meta { display: flex; gap: 8px; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .loc-badge { display: inline-block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.16em; color: #889eaa; border: 1px solid #3a5058; padding: 2px 8px; }
+  .loc-badge.size-city    { border-color: #7a6a2a; color: #c8a840; }
+  .loc-badge.size-large   { border-color: #5a6a2a; color: #9aaa50; }
+  .loc-badge.size-medium  { border-color: #3a6a5a; color: #5a9a80; }
+  .loc-badge.size-small   { border-color: #3a5a8a; color: #6a8aba; }
+  .loc-badge.size-huddle  { border-color: #5a5a7a; color: #8a8aaa; }
+  .loc-badge.layer-skies  { border-color: #5a7a9a; color: #8aaaca; }
+  .loc-badge.layer-thrash { border-color: #4a7a30; color: #7a9a50; }
+  .loc-badge.layer-tangle { border-color: #3a6a3a; color: #5a8a60; }
+  .loc-badge.layer-sink   { border-color: #7a6a30; color: #aa9040; }
+  .loc-badge.layer-drown  { border-color: #7a5030; color: #aa7040; }
+  .loc-badge.layer-dark   { border-color: #6a4a6a; color: #946090; }
+  .loc-badge.found { border-color: #3a5058; color: #5a7078; font-style: italic; }
+  .loc-name { font-size: 1.7rem; letter-spacing: 0.04em; color: #e8e4d8; font-weight: normal; margin-bottom: 0.2rem; line-height: 1.2; }
+  .loc-tagline { font-size: 0.9rem; color: #7a8e96; font-style: italic; }
+  .loc-sections { display: grid; grid-template-columns: 1fr 1fr; }
+  .loc-section { padding: 1.1rem 1.25rem; border-right: 1px solid #2e3f45; border-bottom: 1px solid #2e3f45; }
+  .loc-section:nth-child(2n) { border-right: none; }
+  .loc-section.full { grid-column: 1 / -1; border-right: none; }
+  .loc-section.last { border-bottom: none; }
+  .section-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.18em; color: #889eaa; margin-bottom: 0.55rem; display: block; }
+  .section-text { font-size: 0.95rem; line-height: 1.65; color: #ccc; }
+  .poi-list { list-style: none; display: flex; flex-direction: column; gap: 0; }
+  .poi-list li { font-size: 0.9rem; line-height: 1.5; color: #bbb; padding: 0.42rem 0 0.42rem 1.1rem; border-bottom: 1px solid #2e3f45; position: relative; }
+  .poi-list li:last-child { border-bottom: none; }
+  .poi-list li::before { content: '—'; position: absolute; left: 0; color: #5a7078; font-size: 0.8rem; }
+  .poi-tag { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 1px 5px; border: 1px solid #3a5058; color: #6a8090; margin-left: 6px; vertical-align: middle; position: relative; top: -1px; }
+  .poi-tag.junction { border-color: #4a6a2a; color: #7a9a50; }
+  .poi-tag.shop     { border-color: #2a5a5a; color: #50909a; }
+  .poi-tag.landmark { border-color: #4a3a6a; color: #8a6aaa; }
+
+  /* ── Shop card ── */
+  .shop-card { background: #1D2D31; border: 1px solid #3a5058; padding: 0; margin-bottom: 1rem; }
+  .shop-card.empty { padding: 2rem; color: #5a7078; font-style: italic; min-height: 80px; display: flex; align-items: center; }
+  .shop-header { padding: 1.4rem 1.5rem 1.1rem; border-bottom: 1px solid #2e3f45; }
+  .shop-type-badge { display: inline-block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.16em; color: #889eaa; border: 1px solid #3a5058; padding: 2px 8px; margin-bottom: 0.75rem; }
+  .shop-name { font-size: 1.5rem; letter-spacing: 0.04em; color: #e8e4d8; font-weight: normal; margin-bottom: 0.2rem; line-height: 1.2; }
+  .shop-tagline { font-size: 0.9rem; color: #7a8e96; font-style: italic; }
+  .shop-body { display: grid; grid-template-columns: 1fr 1fr; }
+  .shop-section { padding: 1.1rem 1.25rem; border-right: 1px solid #2e3f45; border-bottom: 1px solid #2e3f45; }
+  .shop-section:nth-child(even) { border-right: none; }
+  .shop-section.full { grid-column: 1 / -1; border-right: none; border-bottom: none; }
+  .shop-section:last-child { border-bottom: none; }
+  .goods-list { list-style: none; display: flex; flex-direction: column; gap: 0; }
+  .goods-list li { font-size: 0.9rem; line-height: 1.5; color: #bbb; padding: 0.42rem 0; border-bottom: 1px solid #2e3f45; display: flex; gap: 10px; align-items: baseline; }
+  .goods-list li:last-child { border-bottom: none; }
+  .goods-list li::before { content: '—'; color: #5a7078; font-size: 0.8rem; flex-shrink: 0; }
+  .type-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 1px solid #2e3f45; padding-bottom: 1.25rem; }
+  .type-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: #6a7e86; white-space: nowrap; margin-right: 4px; }
+  .type-btn { font-family: Georgia, serif; font-size: 0.88rem; padding: 6px 14px; border: 1px solid #3a5058; background: #253338; color: #9ab0ba; cursor: pointer; transition: all 0.14s; letter-spacing: 0.03em; }
+  .type-btn:hover { border-color: #889eaa; color: #889eaa; background: #2a3d44; }
+  .type-btn.active { background: #2a3d44; border-color: #889eaa; color: #889eaa; }
+  .type-btn.any { font-style: italic; }
+
+  /* ── NPC card ── */
+  .bloodline-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 1px solid #2e3f45; padding-bottom: 1.25rem; }
+  .bloodline-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: #6a7e86; white-space: nowrap; margin-right: 4px; }
+  .bloodline-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bl-btn { font-family: Georgia, serif; font-size: 0.88rem; padding: 6px 14px; border: 1px solid #3a5058; background: #253338; color: #9ab0ba; cursor: pointer; transition: all 0.14s; letter-spacing: 0.03em; }
+  .bl-btn:hover { border-color: #889eaa; color: #889eaa; background: #2a3d44; }
+  .bl-btn.active { background: #2a3d44; border-color: #889eaa; color: #889eaa; }
+  .bl-btn.any { font-style: italic; }
+  .bl-btn.active[onclick*="ardent"]    { border-color: #7a4a2a; color: #b47a50; background: #2a2018; }
+  .bl-btn.active[onclick*="ektus"]     { border-color: #4a6a30; color: #7a9a50; background: #1e2818; }
+  .bl-btn.active[onclick*="gau"]       { border-color: #3a6a5a; color: #5a9a80; background: #1a2c28; }
+  .bl-btn.active[onclick*="ironbound"] { border-color: #5a5a7a; color: #8a8aaa; background: #222238; }
+  .bl-btn.active[onclick*="ketra"]     { border-color: #3a5a8a; color: #6a8aba; background: #1a2438; }
+  .npc-card { background: #1D2D31; border: 1px solid #3a5058; padding: 0; margin-bottom: 1.5rem; min-height: 80px; }
+  .npc-card.empty { padding: 2rem; color: #5a7078; font-style: italic; display: flex; align-items: center; }
+  .npc-card.populated { animation: fadeIn 0.3s ease; }
+  .npc-header { padding: 1.4rem 1.5rem 1.1rem; border-bottom: 1px solid #2e3f45; }
+  .npc-bloodline { display: inline-block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.16em; color: #889eaa; border: 1px solid #3a5058; padding: 2px 8px; margin-bottom: 0.75rem; }
+  .npc-bloodline.ardent   { border-color: #7a4a2a; color: #b47a50; }
+  .npc-bloodline.ektus    { border-color: #4a6a30; color: #7a9a50; }
+  .npc-bloodline.gau      { border-color: #3a6a5a; color: #5a9a80; }
+  .npc-bloodline.ironbound { border-color: #5a5a7a; color: #8a8aaa; }
+  .npc-bloodline.ketra    { border-color: #3a5a8a; color: #6a8aba; }
+  .npc-name { font-size: 1.5rem; letter-spacing: 0.04em; color: #e8e4d8; font-weight: normal; margin-bottom: 0.2rem; line-height: 1.2; }
+  .npc-title { font-size: 0.9rem; color: #7a8e96; font-style: italic; }
+  .npc-sections { display: grid; grid-template-columns: 1fr 1fr; }
+  .npc-section { padding: 1.1rem 1.25rem; border-right: 1px solid #2e3f45; border-bottom: 1px solid #2e3f45; }
+  .npc-section:nth-child(even) { border-right: none; }
+  .npc-section.full { grid-column: 1 / -1; border-right: none; border-bottom: none; }
+  .section-label.ardent-l   { color: #b47a50; }
+  .section-label.ektus-l    { color: #7a9a50; }
+  .section-label.gau-l      { color: #5a9a80; }
+  .section-label.ironbound-l { color: #8a8aaa; }
+  .section-label.ketra-l    { color: #6a8aba; }
+  .trade-list { list-style: none; display: flex; flex-direction: column; gap: 0; }
+  .trade-list li { font-size: 0.9rem; line-height: 1.5; color: #bbb; padding: 0.42rem 0 0.42rem 1.1rem; border-bottom: 1px solid #2e3f45; position: relative; }
+  .trade-list li:last-child { border-bottom: none; }
+  .trade-list li::before { content: '—'; position: absolute; left: 0; color: #5a7078; font-size: 0.8rem; }
+  .trade-tag { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 1px 5px; border: 1px solid #3a5058; color: #6a8090; margin-left: 6px; vertical-align: middle; position: relative; top: -1px; }
+
+  /* Footer */
+  .page-footer { padding: 0.5rem 0 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #5a7078; font-style: italic; }
+
+  /* Fade-in */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  .loc-card.populated, .shop-card.populated { animation: fadeIn 0.3s ease; }
+
+  @media (max-width: 560px) {
+    .loc-sections, .shop-body, .npc-sections { grid-template-columns: 1fr; }
+    .loc-section, .shop-section, .npc-section { border-right: none; }
+    .loc-section.full, .npc-section.full { grid-column: 1; }
+    .tab-btn { padding: 8px 16px; font-size: 0.85rem; }
+  }
+  /* Copy bar */
+  .copy-bar { display: flex; align-items: center; gap: 12px; margin-top: 0.75rem; margin-bottom: 1.5rem; }
+  .copy-btn { font-family: Georgia, serif; font-size: 0.82rem; padding: 6px 16px; border: 1px solid #3a5058; background: #1d2d31; color: #7a9aaa; cursor: pointer; letter-spacing: 0.06em; transition: all 0.15s; }
+  .copy-btn:hover { border-color: #BFDFE9; color: #BFDFE9; background: #253338; }
+  .copy-btn:active { transform: scale(0.97); }
+  .copy-confirm { font-size: 0.78rem; color: #5a9a80; font-style: italic; opacity: 0; transition: opacity 0.3s; }
+  .copy-confirm.visible { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<h1>Locations &amp; NPCs</h1>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-settlements" onclick="switchTab('settlements')">Settlements</button>
+  <button class="tab-btn" id="tab-shops" onclick="switchTab('shops')">Traders</button>
+  <button class="tab-btn" id="tab-npcs" onclick="switchTab('npcs')">NPCs</button>
+</div>
+
+<!-- SETTLEMENTS PANEL -->
+<div class="tab-panel active" id="panel-settlements">
+
+  <div class="filter-bar">
+    <span class="bar-label">Layer</span>
+    <button class="f-btn any active" id="layer-any" onclick="setLayer('any')">Any</button>
+    <button class="f-btn layer-skies"  id="layer-skies"  onclick="setLayer('skies')">The Skies</button>
+    <button class="f-btn layer-thrash" id="layer-thrash" onclick="setLayer('thrash')">The Thrash</button>
+    <button class="f-btn layer-tangle" id="layer-tangle" onclick="setLayer('tangle')">The Tangle</button>
+    <button class="f-btn layer-sink"   id="layer-sink"   onclick="setLayer('sink')">The Sink</button>
+    <button class="f-btn layer-drown"  id="layer-drown"  onclick="setLayer('drown')">The Drown</button>
+    <button class="f-btn layer-dark"   id="layer-dark"   onclick="setLayer('dark')">The Darkness-Under-Eaves</button>
+  </div>
+
+  <div class="filter-bar">
+    <span class="bar-label">Size</span>
+    <button class="f-btn any active" id="size-any" onclick="setSize('any')">Any</button>
+    <button class="f-btn" id="size-city"   onclick="setSize('city')">Major City</button>
+    <button class="f-btn" id="size-large"  onclick="setSize('large')">Large Port</button>
+    <button class="f-btn" id="size-medium" onclick="setSize('medium')">Medium Settlement</button>
+    <button class="f-btn" id="size-small"  onclick="setSize('small')">Small Port</button>
+    <button class="f-btn" id="size-huddle" onclick="setSize('huddle')">Huddle</button>
+  </div>
+
+  <div class="gen-bar">
+    <button class="gen-btn" onclick="generateLocation()">Generate Settlement</button>
+  </div>
+
+  <div class="loc-card empty" id="loc-card">Press generate to chart a settlement.</div>
+  <div class="copy-bar" id="copy-bar-loc" style="display:none;">
+    <button class="copy-btn" onclick="copyLocation()">Copy to Clipboard</button>
+    <span class="copy-confirm" id="copy-confirm-loc"></span>
+  </div>
+
+</div>
+
+<!-- SHOPS PANEL -->
+<div class="tab-panel" id="panel-shops">
+
+  <div class="type-bar">
+    <span class="type-label">Type</span>
+    <button class="type-btn any active" onclick="setType('any')">Any</button>
+    <button class="type-btn" onclick="setType('produce')">Fresh Produce</button>
+    <button class="type-btn" onclick="setType('food')">Food &amp; Provisions</button>
+    <button class="type-btn" onclick="setType('weapons')">Weapons &amp; Equipment</button>
+    <button class="type-btn" onclick="setType('materials')">Materials</button>
+    <button class="type-btn" onclick="setType('tavern')">Tavern &amp; Spirits</button>
+    <button class="type-btn" onclick="setType('arconautic')">Arconautic &amp; Devices</button>
+    <button class="type-btn" onclick="setType('animals')">Animals &amp; Hunting</button>
+  </div>
+
+  <div class="gen-bar">
+    <button class="gen-btn" onclick="generateShop()">Generate Shop</button>
+  </div>
+
+  <div class="shop-card empty" id="shop-card">Press generate to find a shop.</div>
+  <div class="copy-bar" id="copy-bar-shop" style="display:none;">
+    <button class="copy-btn" onclick="copyShop()">Copy to Clipboard</button>
+    <span class="copy-confirm" id="copy-confirm-shop"></span>
+  </div>
+
+</div>
+
+<!-- NPC PANEL -->
+<div class="tab-panel" id="panel-npcs">
+
+  <div class="bloodline-bar">
+    <span class="bloodline-label">Bloodline</span>
+    <div class="bloodline-btns">
+      <button class="bl-btn any active" onclick="setBloodline('any')">Any</button>
+      <button class="bl-btn" onclick="setBloodline('ardent')">Ardent</button>
+      <button class="bl-btn" onclick="setBloodline('ektus')">Ektus</button>
+      <button class="bl-btn" onclick="setBloodline('gau')">Gau</button>
+      <button class="bl-btn" onclick="setBloodline('ironbound')">Ironbound</button>
+      <button class="bl-btn" onclick="setBloodline('ketra')">Ketra</button>
+    </div>
+  </div>
+
+  <div class="gen-bar">
+    <button class="gen-btn" onclick="generateNPC()">Generate NPC</button>
+  </div>
+
+  <div class="npc-card empty" id="npc-card">Press generate to meet someone.</div>
+  <div class="copy-bar" id="copy-bar-npc" style="display:none;">
+    <button class="copy-btn" onclick="copyNPC()">Copy to Clipboard</button>
+    <span class="copy-confirm" id="copy-confirm-npc"></span>
+  </div>
+
+</div>
+
+<div class="page-footer">
+  <span>The Wildsea &middot; Felix Isaacs &middot; Mythworks</span>
+  <span id="gen-count"></span>
+</div>
+
+<script>
+
+// ─── TAB LOGIC ────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ─── CLIPBOARD HELPERS ────────────────────────────────────────────────────────
+function showCopyBar(barId) {
+  document.getElementById(barId).style.display = 'flex';
+}
+
+function flashConfirm(confirmId) {
+  const el = document.getElementById(confirmId);
+  el.textContent = 'Copied.';
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 2000);
+}
+
+function copyToClipboard(text, confirmId) {
+  navigator.clipboard.writeText(text).then(() => flashConfirm(confirmId));
+}
+
+function copyLocation() {
+  const card = document.getElementById('loc-card');
+  if (card.classList.contains('empty')) return;
+
+  const name = card.querySelector('.loc-name')?.textContent.trim() || '';
+  const tagline = card.querySelector('.loc-tagline')?.textContent.trim() || '';
+  const badges = [...card.querySelectorAll('.loc-badge')].map(b => b.textContent.trim()).join(' · ');
+
+  const sections = card.querySelectorAll('.loc-section');
+  let md = `# ${name}\n*${badges}*\n*${tagline}*\n\n`;
+
+  sections.forEach(sec => {
+    const label = sec.querySelector('.section-label')?.textContent.trim() || '';
+    const text = sec.querySelector('.section-text');
+    const poiList = sec.querySelector('.poi-list');
+
+    if (label) md += `**${label}**\n`;
+    if (text) md += `${text.textContent.trim()}\n\n`;
+    if (poiList) {
+      const items = poiList.querySelectorAll('li');
+      items.forEach(li => {
+        const tag = li.querySelector('.poi-tag')?.textContent.trim() || '';
+        const rawText = li.textContent.trim();
+        const cleanText = rawText.replace(tag, '').trim();
+        md += `- ${cleanText}${tag ? ` *(${tag})*` : ''}\n`;
+      });
+      md += '\n';
+    }
+  });
+
+  copyToClipboard(md.trim(), 'copy-confirm-loc');
+}
+
+function copyShop() {
+  const card = document.getElementById('shop-card');
+  if (card.classList.contains('empty')) return;
+
+  const name = card.querySelector('.shop-name')?.textContent.trim() || '';
+  const badge = card.querySelector('.shop-type-badge')?.textContent.trim() || '';
+  const tagline = card.querySelector('.shop-tagline')?.textContent.trim() || '';
+
+  let md = `# ${name}\n*${badge}*\n*${tagline}*\n\n`;
+
+  // Overview and Trader sections
+  const sections = card.querySelectorAll('.shop-section:not(.full)');
+  sections.forEach(sec => {
+    const label = sec.querySelector('.section-label')?.textContent.trim() || '';
+    if (label) md += `**${label}**\n`;
+    // Trader section has multiple text divs
+    const texts = sec.querySelectorAll('.section-text');
+    texts.forEach(t => {
+      const txt = t.textContent.trim();
+      if (txt) md += `${txt}\n`;
+    });
+    md += '\n';
+  });
+
+  // Goods list
+  const goodsList = card.querySelector('.goods-list');
+  if (goodsList) {
+    md += `**Shop Goods**\n`;
+    goodsList.querySelectorAll('li').forEach(li => {
+      md += `- ${li.textContent.trim()}\n`;
+    });
+    md += '\n';
+  }
+
+  copyToClipboard(md.trim(), 'copy-confirm-shop');
+}
+
+function copyNPC() {
+  const card = document.getElementById('npc-card');
+  if (card.classList.contains('empty')) return;
+
+  const name = card.querySelector('.npc-name')?.textContent.trim() || '';
+  const bloodline = card.querySelector('.npc-bloodline')?.textContent.trim() || '';
+  const title = card.querySelector('.npc-title')?.textContent.trim() || '';
+
+  let md = `# ${name}\n*${bloodline}* · *${title}*\n\n`;
+
+  const sections = card.querySelectorAll('.npc-section');
+  sections.forEach(sec => {
+    const label = sec.querySelector('.section-label')?.textContent.trim() || '';
+    const text = sec.querySelector('.section-text');
+    const tradeList = sec.querySelector('.trade-list');
+
+    if (label) md += `**${label}**\n`;
+    if (text) md += `${text.textContent.trim()}\n\n`;
+    if (tradeList) {
+      tradeList.querySelectorAll('li').forEach(li => {
+        const tag = li.querySelector('.trade-tag')?.textContent.trim() || '';
+        const rawText = li.textContent.trim();
+        const cleanText = rawText.replace(tag, '').trim();
+        md += `- ${cleanText}${tag ? ` *(${tag})*` : ''}\n`;
+      });
+      md += '\n';
+    }
+  });
+
+  copyToClipboard(md.trim(), 'copy-confirm-npc');
+}
+
+// ─── LOCATION DATA ────────────────────────────────────────────────────────────
+
+// ─── LAYER DATA ───────────────────────────────────────────────────────────────
+// Weights for random layer selection — Thrash most common, deeper = rarer
+const layerWeights = { skies:8, thrash:35, tangle:30, sink:14, drown:8, dark:5 };
+
+const layerData = {
+
+skies: {
+  label: 'The Skies',
+  cssClass: 'layer-skies',
+  overview: [
+    "above the canopy line, where the wind is constant and the cold bites hard — most people looking up from the thrash would never guess anything lived here",
+    "in the clear air above the ironroot crowns, the Wildsea a vast rustling carpet below and the horizon wider than most people ever see in their lives",
+    "where the ironroots have pushed through the canopy ceiling and into open sky — the kind of altitude that makes breathing a consideration and trade routes a genuine achievement",
+    "high enough that the storms come laterally rather than from above, and the structures are built low and heavy to stay in place when they do",
+    "above the cloud line on the good days, which is beautiful, and inside the cloud line on the bad days, which is not",
+  ],
+  foundations: ['mesa','mountainside','suspended','tallshank-crown'],
+  foundationDescs: {
+    mesa: "perched on a high mesa, old rock showing through the root-growth at the edges, the sheer drop to the canopy below giving the settlement a natural defence and a constant vertigo",
+    mountainside: "carved into and across the face of a high-altitude mountainside, its structures stepped up the rock in tiers that follow the contour of the slope",
+    suspended: "suspended in the open air by an arrangement of arcomagnetic anchors, treated cables, and alchemical buoyancy — it should not work and yet it does and has for a long time",
+    'tallshank-crown': "established in the upper crown of a tallshank, where the trunk narrows and the branches spread wide and flat, the settlement built around and between them like a nest",
+  },
+  atmospheres: [
+    "The wind is the first thing and the last thing — it never stops, and every structure is built with that fact in mind. Ropes, weights, anchors. Calm days are talked about for weeks.",
+    "The air up here is different. Thinner. Colder. People move a little more deliberately, breathe a little more carefully. It takes a week to stop noticing.",
+    "Below, the canopy is a texture, a colour, a sound. From here it looks like a sea. Several residents who grew up here have never been down to it and aren't sure they'd want to be.",
+    "The light is extraordinary and unrelenting. No canopy shade up here, no filtering green. Everything is brighter than it should be and the squint is permanent.",
+    "Storm preparation is a serious and recurring communal activity. Everything is rated for wind. Everything has a lashing point. The evacuation protocol is practised regularly and taken seriously.",
+    "The sound from below — the creak and rustle of the Wildsea — rises as a distant constant hum. Residents stop hearing it. Visitors find it either comforting or deeply strange.",
+  ],
+  specialPOI: [
+    ["The Anchor Station", "the arcomagnetic anchor complex that keeps the settlement in place — maintained continuously by a dedicated crew and more complicated than it looks", "landmark"],
+    ["The Wind Gauge", "a public instrument measuring current wind speed and direction, updated hourly, consulted by every resident before going outside for any extended period", "landmark"],
+    ["The Storm Shelter", "a reinforced deep-cut bunker capable of holding the entire settlement population, stocked for three weeks, tested quarterly", "landmark"],
+    ["The Lift Station", "the primary mechanical descent to the canopy below — a cable-and-counterweight system handling both freight and passengers, the queue on busy days is significant", "landmark"],
+    ["The Alchemist's Rig", "the alchemical buoyancy equipment that supplements the arcomagnetic system, maintained by two specialists who have not agreed on anything in eleven years but have kept it running regardless", "landmark"],
+    ["The Tether Market", "an open market on the settlement's windward face, every stall secured with enough cable to survive a moderate storm and some of them tested by worse", "landmark"],
+    ["The Horizon Watch", "a staffed observation post using the exceptional sky-level visibility to monitor both weather and distant vessel movement — the most useful vantage point for three weeks' sail", "landmark"],
+    ["The Descent Broker", "a specialist agent managing freight scheduling for the lift system, with a particular focus on the delicate problem of sending cargo down to a canopy that is never quite where the charts say", "shop"],
+  ],
+  hooks: [
+    "The arcomagnetic anchor array has developed an oscillation — subtle, regular, not yet dangerous. The two maintenance specialists have opposite diagnoses and neither will defer to the other. The settlement doesn't know yet.",
+    "A storm of unusual size and unusual direction is three days out by the horizon watch's estimate. The storm shelter has a problem that was scheduled for repair next month. This is no longer acceptable timing.",
+    "Something has been found in the crown of the tallshank below the settlement — a structure, previously unknown, accessible only from above. The settlement is arguing about who has the right to explore it.",
+    "A skyborne vessel — rare, experimental, running no flags — has been circling at distance for two days without hailing. It has not moved closer. It has not moved away.",
+    "The settlement's lift cable has been cut — not frayed, not worn, cut — at the lower anchor point. Nobody is claiming responsibility. The settlement is now effectively isolated from the canopy below.",
+    "A community of creatures has taken up residence in the settlement's arcomagnetic anchor array. They're not causing damage. Yet. Their presence is interfering with calibration in ways that are so far minor.",
+  ],
+},
+
+thrash: {
+  label: 'The Thrash',
+  cssClass: 'layer-thrash',
+  overview: [
+    "on the topmost canopy surface, where the ironroot crowns spread wide and ships sail the leafy waves between them",
+    "at the living surface of the Wildsea, where the light is good and the trade routes pass and most of what remains of civilisation has chosen to make its home",
+    "on the upper thrash, open to sky, the canopy surface visible in all directions and the density of the tangle below keeping the roots from shifting under the foundations",
+    "where the canopy runs broad and stable, an established presence on one of the more reliable stretches of the upper waves",
+    "on a well-trafficked stretch of the thrash, the kind of location that accumulated a settlement almost by accident and has been trying to manage the consequences ever since",
+    "at a natural convergence of canopy currents, the ironroot crowns funnelling both vessel traffic and wind toward this point with commercial implications that were noticed early and exploited thoroughly",
+  ],
+  foundations: ['island','spit','tallshank','wreckage','adrift'],
+  foundationDescs: {
+    island: "on a true island — solid ground, old rock showing at the edges, the roots growing into and around it rather than through it — the kind of foundation that empires were built on before the Verdancy",
+    spit: "on a compressed spit, the accumulated mass of decades of deadfall and debris packed solid enough to build on, anchored to the ironroot crowns beneath it",
+    tallshank: "wound around and across a tallshank base, where the trunk is wide enough to build against and tall enough to use as a navigation landmark from two days' sail in any direction",
+    wreckage: "built across the carcass of one or more old ships, the hulls fused by growth and time into a platform that the current settlement has long since stopped thinking of as wreckage",
+    adrift: "on a vessel or cluster of vessels that has given up on going anywhere and committed to being somewhere — the boundary between ship and port lost a long time ago",
+  },
+  atmospheres: [
+    "The smell of rendered fat and spore-smoke hangs in the air. The dockside is never quiet and the undercrew are always moving.",
+    "There's a quietness here that takes a moment to place. The residents speak at low volume. Strangers get looked at but not approached.",
+    "The architecture is a palimpsest — old structures built over, added to, painted and repainted, no two materials quite matching.",
+    "The place is louder than it looks. Every junction is occupied, every walkway busy, the noise arriving before any of the detail.",
+    "The dockmaster runs a tight register. Ships are logged, cargo noted, crew counted. It feels orderly. It feels watched.",
+    "There is a particular kind of patience here that suggests the place has learned to wait out whatever arrives.",
+    "The settlement has the feel of somewhere that recently survived something and is taking stock of what it has left.",
+    "The ironroot in this area has a colour you haven't seen elsewhere — darker, almost black, the grain unusually tight.",
+    "The bioluminescence is bright here. By night the settlement glows and the dockside needs no lanterns.",
+    "The wind is constant and comes from an unusual direction, giving the whole place a lean — the structures built to account for it.",
+    "The market is the heart of it. Everything else exists to service the market or to extract value from those attending it.",
+    "A great crane — old, enormous, still functional — dominates the skyline. Half the port exists because of what it can lift.",
+    "The locals have a private vocabulary for this place — phrases that mark belonging, and mark its absence in visitors.",
+    "Children are everywhere. This is a place where families stay. That changes how it feels.",
+    "Everything here has been used before. The planking, the rigging, the signage. Nothing is new. Everything works.",
+    "The settlement is built in tiers with a hierarchy that is architectural as much as social. The higher your platform, the higher your standing.",
+    "There is more music here than elsewhere — coming from three different junctions simultaneously, uncoordinated, somehow not clashing.",
+    "The community has its own particular ritual around arrival — something expected of newcomers, something small, something that makes clear this place has rules.",
+  ],
+  specialPOI: [],
+  hooks: [
+    "The port's dockmaster has been found dead — apparently from natural causes, officially, and very quickly. The dockmaster was in the middle of a dispute with a powerful trading house whose representative is still in port.",
+    "A ship arrived this morning that matches the description of a vessel reported lost eighteen months ago. The dock records show a different name. The crew match no known register.",
+    "A long-established shop in the market district has closed abruptly. The proprietor left no word. The stock inside is still visible through the shuttered windows — including something that doesn't belong in a general shop.",
+    "Three separate merchants have independently received the same unusual item in their last cargo shipments. None of them ordered it. None of them knows what it is. One has already tried to get rid of it.",
+    "A crezzerin seep has been detected below the port's main dock. The structural implications are significant. The port authority knows. The port authority has not made an announcement.",
+    "A bounty has been posted — publicly, on the dock register — for information about a vessel seen leaving this port three months ago. The bounty is large and the posting authority is a name the crew may recognise.",
+    "A navigation chart for sale at the cartography stall depicts a route through a region that every other chart shows as impassable. The chart is old. The route, if real, would cut twelve days off a significant journey.",
+    "Someone has been leaving offerings at the settlement's memorial column — names and dates, written on treated paper, secured at night. The names are not on the column. They should be.",
+    "A delivery of medical supplies arrived with a crate that wasn't on the manifest. The crate is sealed. The delivery agent left before anyone noticed.",
+    "Two of the settlement's council have stopped speaking to each other, publicly and without explanation. A decision that required both of them has now stalled indefinitely. The decision involves the settlement's primary income source.",
+    "A piece of the settlement's infrastructure — a section of walkway over the tangle — has been deliberately removed, not damaged. Someone took it apart and carried it away.",
+    "A child has been telling anyone who will listen about a structure they found below the thrash — too specific to be imagination, too detailed to be secondhand. The child is seven and describes the route precisely.",
+    "The only local who knows how to operate the settlement's primary mechanical system has gone missing. The system runs fine for now. It needs maintenance in about a week.",
+    "A stranger arrived three days ago and has been asking questions about the settlement's founding — specifically about what was here before. Nobody knows why. Nobody has asked.",
+    "A message arrived at the signal relay — addressed to a name nobody recognises, from a sender nobody knows, asking them to leave immediately and take nothing.",
+    "The tangle below the settlement has been unusually active for three days. The locals don't think it's significant. The locals also haven't been looking at it closely.",
+  ],
+},
+
+tangle: {
+  label: 'The Tangle',
+  cssClass: 'layer-tangle',
+  overview: [
+    "below the thrash surface, where the branches of the great ironroots intertwine into a half-dark lattice that large ships rest their hulls against and smaller communities carve their homes into",
+    "in the thick interwoven branch-layer below the canopy surface, where the light filters green and amber and the air is warm and dense with spore and insect",
+    "threaded into the upper tangle, where the ironroot structure is dense enough to anchor permanent structures and the distance from the surface has become a feature rather than a liability",
+    "in the living architecture of the tangle, where the branches have been worked and guided over generations into something that was never quite designed and never quite grew on its own",
+    "at the depth where the branches press close enough that navigation becomes a matter of knowing the routes rather than reading the canopy",
+    "in the half-dark of the tangle, where the filtered light has its own quality and the sounds from the thrash above are muffled to a background noise that newcomers find oppressive and residents find comforting",
+  ],
+  foundations: ['tangle-laced','carved-trunk','wreckage','spit','suspended'],
+  foundationDescs: {
+    'tangle-laced': "woven into the tangle structure itself — the settlement's floors are the branches, its walls are ironroot, and the line between architecture and living wood has long since blurred",
+    'carved-trunk': "carved directly into the body of one or more enormous ironroot trunks, the rooms and passages cut from wood that is still technically alive",
+    wreckage: "built around the lodged remains of vessels that came down to the tangle and never went back up, the hulls serving as the primary structural bones of the settlement",
+    spit: "on a compressed spit of old debris that has settled into the tangle structure, firm enough to build on but with the particular smell of old organic material that nothing eliminates",
+    suspended: "suspended within the tangle on a web of cables, beams, and treated rope, swaying slightly with the movement of the branches, always slightly moving",
+  },
+  atmospheres: [
+    "The light is green and amber, filtered through layers of canopy above. It changes with the season. It changes with the hour. Residents read it the way others read weather.",
+    "The sound is different down here — the thrash above provides a muffled background roar, and the tangle's own sounds fill in around it. Insects, branches, the deep creak of the ironroots.",
+    "Bioluminescence does significant work here. Every junction glows. Personal lamps are a fashion statement as much as a necessity.",
+    "The air is warm and close. Coming from the thrash you feel it immediately — a drop in wind, a rise in temperature, a density to the air that takes getting used to.",
+    "Things grow here that don't grow on the surface. The walls of the settlement are never entirely bare — the tangle has always been trying to reclaim them and the residents are always, incrementally, losing.",
+    "The residents move differently than surface-dwellers. Vertical movement is as natural as horizontal. Ladders and ropes and the branches themselves are all equally valid routes.",
+    "There's a watchfulness here. The tangle has things in it and the settlement knows this. The perimeter lights are maintained. The watch rota is taken seriously.",
+    "Deep-tangle music — low, rhythmic, played on instruments that resonate with the branch structure — drifts from several locations at once. It is distinctive and, once heard in context, oddly correct.",
+    "The tangle-level humidity does things to everything — wood swells, metal rusts faster, paper must be kept sealed. The residents maintain a steady and practiced relationship with this fact.",
+    "You can hear the creatures here without always seeing them. The tangle is inhabited and the inhabitants are not shy about announcing themselves.",
+    "The settlement's relationship with the tangle below is complex. There are depths the residents go and depths they don't, and the boundary between the two is marked on unofficial maps that everyone knows and nobody posts publicly.",
+  ],
+  specialPOI: [
+    ["The Descent Post", "a managed access point to the deeper tangle below, with a log of who has gone down and who has come back, maintained with a seriousness that tells you something about the failure rate", "landmark"],
+    ["The Tangle Watch", "a perimeter monitoring station tracking movement through the outer branch structure, staffed at all hours, armed", "landmark"],
+    ["The Canopy Lift", "the cable-and-basket system connecting the settlement to the thrash above — freight and passengers, slow, reliable, the most important single piece of infrastructure", "landmark"],
+    ["The Bioluminescence Garden", "a maintained growing space where cultivated bioluminescent organisms provide most of the settlement's light, tended by specialists who treat it as a hybrid of engineering and agriculture", "landmark"],
+    ["The Preservation Hall", "a climate-managed storage facility designed to fight the tangle's native humidity — the most expensive building in the settlement and the most necessary", "landmark"],
+    ["The Branch Market", "a market built across the natural branch-platform structure, its layout determined by where the ironroot grows rather than any plan, expanding when it can and contracting when it must", "shop"],
+  ],
+  hooks: [
+    "Something below the settlement has been moving closer for three days — not attacking, not retreating, circling. The tangle watch has logged it. The settlement's leadership is divided on what it means.",
+    "The canopy lift has been sabotaged — the cable not cut but loosened, a slow failure rather than a sudden one. Someone wanted the settlement isolated from the thrash for a specific period. That period has started.",
+    "A section of the tangle below the settlement has gone quiet. No insects. No movement. No sound at all from a zone where there's always sound. The settlement's hunters haven't been paid to investigate it yet.",
+    "An old wreck deeper in the tangle has started showing signs of occupation — lights at intervals, regular movement patterns. Nobody went down. The wreck has been empty since before the settlement was built.",
+    "A species of growth previously unknown in this area has appeared in the settlement's outer walls. It's not dangerous. The tangle-specialist says that isn't the point.",
+    "One of the settlement's carved-out trunk rooms has been sealed from the inside. The person inside is a long-term resident. They have been in there for four days. They are not responding. They are breathing.",
+    "The bioluminescence in the outer perimeter has started pulsing in a consistent sequence. The settlement's arconaut believes it is a response to something. She cannot yet explain to what.",
+    "A tangle creature the size of a vessel hull has settled against the settlement's outer branch structure. It is not aggressive. It is warm-blooded. It is very large and it seems to intend to stay.",
+  ],
+},
+
+sink: {
+  label: 'The Sink',
+  cssClass: 'layer-sink',
+  overview: [
+    "in the sink, below the tangle, where the largest creatures of the Wildsea rule and the branches close tightly enough around descended vessels that getting back to the surface becomes the project of a career",
+    "at sink-depth, where wrecks accumulate in the dense branch-structure and the permanent dark has been making its case against habitation for a very long time without quite winning",
+    "in the deep branch-tangle of the sink, where the ambient crezzerin is high enough to be a daily concern and the sounds from the surface have long since faded to nothing",
+    "where most sensible vessels don't go, which is why this settlement has the trade to itself that it does",
+    "at a depth that took significant technical achievement to reach and takes ongoing effort to remain at — the sink does not make habitation easy and has never pretended otherwise",
+  ],
+  foundations: ['lodged-wreck','carved-trunk','crezzerin-shelf','anchor-web'],
+  foundationDescs: {
+    'lodged-wreck': "built across and inside vessels that came down to the sink and lodged in the branch-structure permanently, the hulls modified over decades into something between ship and building",
+    'carved-trunk': "carved into ironroot trunks of enormous age at sink depth — trunks hundreds of feet across at this level, their wood dense and dark and worked over generations",
+    'crezzerin-shelf': "on a crezzerin-crystal shelf formation of unusual stability — the crystal having grown to fill a gap in the branch structure and providing a surface harder than processed ironroot",
+    'anchor-web': "suspended in the sink on a web of treated cables anchored to multiple surrounding trunks, designed to resist the branch-pressure that has claimed every simpler structure in this depth",
+  },
+  atmospheres: [
+    "The first and dominant impression is darkness and noise. The sink has its own sounds — deeper, more structural than the tangle above, the ironroots themselves audible at this depth.",
+    "Everything is maintained against constant pressure. The branches here move — slowly, incrementally, but measurably — and the settlement's ongoing task is to be somewhere the branches are not going.",
+    "Crezzerin exposure is an ambient condition here. The residents manage it, treat it, account for it in every decision. Newcomers are told plainly before they arrive. Not all of them believe it until they do.",
+    "Light is artificial, chemical, and precious. Every lamp is accounted for. The settlement's fuel supply is one of its most carefully tracked resources.",
+    "The population here is self-selected for a very specific kind of person. They came down to the sink for reasons and they stayed for reasons and if you ask them they will tell you both, directly and without sentiment.",
+    "The creatures here are larger. This is the first thing sink-dwellers tell newcomers, and it remains the most important thing they can say. The largest things in the Wildsea are down here.",
+    "The architecture is inward-facing. Every external surface is reinforced, sealed, and monitored. The interior of the settlement is warm and organised and the exterior is managed with something between vigilance and respect.",
+    "Time runs differently down here. Without the natural light cycle of the thrash there is no day and no night. The settlement runs on shifts and schedules, and the residents adapt. It takes a long time to adapt.",
+  ],
+  specialPOI: [
+    ["The Crezzerin Monitor", "a continuously staffed station measuring ambient crezzerin density throughout the settlement, with automatic seals on the external vents when levels cross the treatment threshold", "landmark"],
+    ["The Ascent Station", "the managed cable-and-winch system for ascending to the tangle above — a process taking the better part of a day and requiring advance booking during busy periods", "landmark"],
+    ["The Pressure Watch", "a structural monitoring operation measuring the ongoing branch-pressure on the settlement's outer walls, with a maintenance crew permanently assigned to responding to readings", "landmark"],
+    ["The Deep Physicker", "a medical operation specialising in crezzerin exposure treatment, pressure injuries, and the particular suite of conditions that sink-depth habitation produces over time", "shop"],
+    ["The Creature Log", "a public record of large creature movements in the surrounding sink, maintained by the settlement's hunters and consulted by everyone before going outside", "landmark"],
+    ["The Salvage Hall", "a processing and trading facility for sink-depth salvage — wrecks are everywhere down here and what is inside them can be remarkable, if you can get it out", "shop"],
+    ["The Sealed Archive", "a crezzerin-resistant documentation store holding the settlement's records and a collection of material recovered from sunken pre-Verdancy structures at this depth", "landmark"],
+  ],
+  hooks: [
+    "A wreck that has been lodged in the branch-structure near the settlement for decades has recently moved — not drifted, moved. It is now significantly closer. The creature responsible has not been sighted.",
+    "The settlement's ascent cable has been behaving erratically — arriving at the surface with signs of interference that the tangle-level crews cannot explain from their end. Something is happening to it between the two levels.",
+    "A section of the settlement's outer branch-monitoring has gone dark — not damaged, simply stopped transmitting. The crew sent to investigate it have not come back. They have been gone for eighteen hours.",
+    "A cache of material from a pre-Verdancy structure has been brought up to the settlement. Among the contents is documentation that rewrites the official history of a significant port on the thrash above. The finder wants to know what this information is worth.",
+    "Something is producing a regular, structured signal from deep in the sink below the settlement. It is not distress. It is not any known navigation marker. It has been transmitting for eleven days.",
+    "The settlement's crezzerin monitor has begun reading a new compound — not the standard reactive form, something distinct. The physicker has not seen it before. The compound is affecting the residents who have had the longest exposure in ways that are only now becoming visible.",
+  ],
+},
+
+drown: {
+  label: 'The Drown',
+  cssClass: 'layer-drown',
+  overview: [
+    "in the drown, where light has ceased to exist as a meaningful concept and the ironroot trunks are hundreds of feet across and the gaps between them are gulfs that defy mere distance",
+    "at the depth of no return — or so they said, before whoever built this proved them wrong, at a cost that the current residents will tell you about if you ask and sometimes if you don't",
+    "where the branches thin and the great trunks loom in absolute darkness, and any settlement here exists as an act of defiance against everything the drown represents",
+    "so deep that the thrash is a concept, not a memory — none of the current residents were born above the sink and most have never been there",
+    "at drown-depth, which is not where settlements go. This one is here anyway. Its existence is either a triumph or a warning and the residents have strong opinions on which.",
+  ],
+  foundations: ['trunk-face','pre-verdancy-structure','creature-bone','crystal-formation'],
+  foundationDescs: {
+    'trunk-face': "cut into the face of an ironroot trunk of near-incomprehensible girth — the walls of the settlement are the trunk, and the trunk's slow growth is the settlement's longest-term structural concern",
+    'pre-verdancy-structure': "occupying the bones of a pre-Verdancy structure that the Verdancy's growth buried rather than destroyed — rooms and passages that predate everything above them by three hundred years",
+    'creature-bone': "built within and against the mineralised skeleton of something that was large even for the drown and has been dead long enough to become stable — the architecture is strange because the bones are strange",
+    'crystal-formation': "on a vast crezzerin crystal formation that has been growing in the drown for long enough to constitute a landscape — the crystals provide both structure and ambient light, cold and blue and constant",
+  },
+  atmospheres: [
+    "There is no natural light here and there never has been and the residents have stopped requiring it. The artificial light is warm and carefully managed and the darkness beyond the settlement's perimeter is simply part of the world.",
+    "The silence here is structural. The sounds of the Wildsea — its insects, its wind, its creak and rustle — are completely absent. The drown makes its own sounds and the residents know every one of them.",
+    "Everything is adapted. The food, the air management, the physiology of the long-term residents. Drown habitation leaves marks and the marks are visible on everyone who has been here long enough.",
+    "The crezzerin here is a fundamental environmental condition. Not a danger to be managed but a constant to be lived within. The settlement's relationship with it is complex and has produced knowledge that exists nowhere else.",
+    "The social structure here is close and specific. Everyone knows everyone. New arrivals are remarkable events. The settlement's culture has developed over generations of near-total isolation into something with its own grammar.",
+    "The bioluminescent organisms cultivated here have adapted over generations to the drown's specific conditions and now produce light in spectra and patterns not seen in their surface cousins. The settlement glows in ways that took decades to produce.",
+    "Time here is measured by shift and schedule and the slow biological rhythms of the residents, who have developed sleep cycles that bear only a passing relationship to any surface standard.",
+    "The weight of everything above is felt, not physically, but as knowledge. The residents know exactly how far up the surface is. They know it the way surface-dwellers know the sky is there — constantly, without having to look.",
+  ],
+  specialPOI: [
+    ["The Light Engine", "the arcomagnetic and chemical system providing the settlement's entire light supply — its most critical infrastructure, maintained by a dedicated crew who understand that if it fails the settlement ends", "landmark"],
+    ["The Air Works", "the atmospheric processing equipment maintaining breathable conditions at drown depth — also critical, also continuously maintained, also the source of the settlement's most serious recurring anxiety", "landmark"],
+    ["The Drown Physicker", "a medical operation dealing exclusively with conditions unique to drown habitation — the long-term crezzerin effects, the pressure changes, the particular psychological conditions that isolation at this depth produces", "shop"],
+    ["The Ascent Archive", "a detailed record of every successful ascent attempt to the sink above — the routes, the timing, the conditions, the failures — maintained as the settlement's most practical survival document", "landmark"],
+    ["The Deep Signal Room", "a communications facility operating the long-range signals equipment that keeps the settlement in contact with the surface world, imperfectly and at significant delay", "landmark"],
+    ["The Old Structure", "the pre-Verdancy rooms that the settlement has not fully explored — sealed sections whose age makes them both valuable and concerning, with specific protocols about which doors get opened", "landmark"],
+    ["The Crystal Tender", "the operation maintaining the crezzerin crystal formations that provide both structural support and ambient light — part engineering, part negotiation with a material that has its own slow agenda", "shop"],
+  ],
+  hooks: [
+    "The light engine has developed a fault that the maintenance crew cannot fully diagnose. The light is currently stable. The fault is not fully understood. These two facts are in tension.",
+    "A signal has arrived from somewhere deeper than the drown — below this settlement, in the direction of the Darkness-Under-Eaves. It is structured. It is not distress. It is repeating.",
+    "One of the pre-Verdancy sealed rooms has been opened — not by the settlement's governance, which has protocols about this, but by someone working alone. What they found has changed their behaviour in ways the settlement's small community cannot fail to notice.",
+    "A creature of drown-level scale has taken up residence against the settlement's outer wall. It is not attacking. It is warm. Its presence is affecting the structural monitoring in ways the maintenance crew cannot account for.",
+    "The last ascent party — three people, experienced, properly equipped — did not return on schedule. They are seventeen hours overdue. The settlement's leadership is deciding how to respond to this.",
+    "A long-term resident has developed a crezzerin interaction that the physicker has never seen before — not deterioration, something else. Something that is producing information. The resident is not sure whether to be frightened.",
+  ],
+},
+
+dark: {
+  label: 'The Darkness-Under-Eaves',
+  cssClass: 'layer-dark',
+  overview: [
+    "at the roots of the world, where the bones of the old civilisation press against the living wood above and nothing should be alive and something is",
+    "in the Darkness-Under-Eaves, which is where the roots go and where the old world ended and where certain people have, apparently, decided to live",
+    "at the absolute floor of the Wildsea, below the drown, in the place that most knowledgeable people refuse to describe in specific terms",
+    "in the place the Free Basic Rules describe as follows: 'The roots of the wildsea and the bones of the old world. The less said about this place the better.'",
+    "somewhere that has no business having a settlement in it, and yet",
+  ],
+  foundations: ['old-world-structure','root-system','unknown'],
+  foundationDescs: {
+    'old-world-structure': "occupying old-world structures that the roots have grown through and around rather than through and destroyed — buildings that predate the Verdancy, preserved by circumstance and by whatever keeps things preserved here",
+    'root-system': "built into and against the great ironroot root-system itself — the roots at this depth are metres across, some of them tens of metres, and the settlement occupies the gaps between them",
+    unknown: "on a foundation that the current residents either cannot describe or will not, and the distinction is not entirely clear",
+  },
+  atmospheres: [
+    "The silence is absolute except for the sounds that break it, which are not random. Something here communicates and has been communicating for a long time.",
+    "The old world is visible here. Not just as bones and ruins but as presence — a sense of what this place was that does not require examination to feel.",
+    "The residents do not look like people who fear this place. They look like people who have made a specific peace with it, the terms of which they are not sharing.",
+    "There is light here that has no source. Cold, pale, faintly blue. It has always been here. Nobody made it.",
+    "The roots here have faces. Not carved, not grown — simply arranged, over centuries, into configurations that are not accidental. The residents have stopped seeing them. Newcomers cannot stop seeing them.",
+    "The crezzerin here is different. Not more or less reactive — different. The settlement's arconaut uses the word 'aware' once, quietly, and does not use it again.",
+  ],
+  specialPOI: [
+    ["The Root-Face", "a section of enormous ironroot that has grown into a configuration the settlement's oldest residents describe simply as the reason they stayed", "landmark"],
+    ["The Pre-Verdancy Chamber", "a room from before the Verdancy, sealed, intact, its original contents undisturbed — the settlement has chosen not to open it and has chosen not to leave it unguarded", "landmark"],
+    ["The Source", "something in the settlement's lowest accessible point that provides warmth, clean air, and a faint light that the settlement's founders found and built around. Its nature has not been determined.", "landmark"],
+    ["The Keeper's Room", "the residence and workspace of whoever currently maintains the settlement's relationship with whatever the settlement has a relationship with — the role passes from person to person and the criteria for succession are not public", "landmark"],
+    ["The Old Market", "a trading space operating on a system of exchange that predates current barter conventions — the residents here value different things than surface communities do, for reasons that become clear over time", "shop"],
+  ],
+  hooks: [
+    "The settlement has sent word to the surface — a significant event in itself — requesting a specific person by name. The person has been dead for forty years. The settlement was informed of this. They sent word again asking for that person anyway.",
+    "Something in the roots near the settlement has changed. The residents know what it was before. They have not yet described what it is now. They asked for outside witnesses before they do.",
+    "A visitor to the settlement has not left. Not died, not been prevented — simply not left. They report, on signal, that they will stay a little longer. This message has been arriving for six months.",
+    "The settlement is offering something for trade — information, specifically — that they say they recovered from a pre-Verdancy structure. The information concerns events that are, according to every source available to the surface world, completely unknown. They want an arconaut's assessment of its accuracy.",
+    "A route has been found connecting the Darkness-Under-Eaves to a location on the thrash. The settlement does not want this known but has decided that managing who knows it is better than pretending it doesn't exist.",
+    "The settlement has stopped responding to signals. Not refused — stopped. The last transmission was routine. The silence is now three weeks long and nobody on the surface knows what to make of it.",
+  ],
+},
+
+}; // end layerData
+
+// ─── SIZE DATA ─────────────────────────────────────────────────────────────────
+const sizeData = {
+  city:   { label:'Major City',         cssClass:'size-city',   poiCount:[5,6], desc:[
+    "a sprawling multi-tier city grown far beyond any single founder's plan, its population too varied to fully understand and its politics too complicated to summarise",
+    "the largest settlement in several weeks' sail, its dock-ring running in both directions around a great trunk cluster, its markets open at all hours",
+    "a city that has survived more than one catastrophe and rebuilt both times, which gives it a particular confidence that other places lack",
+    "a canopy metropolis where every district feels like a different world depending on where you step off the dock, and none of them are entirely wrong about it",
+  ]},
+  large:  { label:'Large Port',         cssClass:'size-large',  poiCount:[4,5], desc:[
+    "a busy, well-established port with a permanent population and enough trade to support every kind of shop and service, if you know where to find it",
+    "a trading port of significant regional importance, its dockmaster known across three weeks' sailing for standards that are fair and exact in roughly equal measure",
+    "a large, lively settlement with a reputation that precedes it — sometimes positively, sometimes not, depending on who's doing the preceding",
+    "one of the bigger ports on this stretch, with enough going on that strangers can pass unnoticed, which means different things to different people",
+  ]},
+  medium: { label:'Medium Settlement',  cssClass:'size-medium', poiCount:[3,4], desc:[
+    "a working settlement of a few hundred people, the kind of place that handles most of its own problems and trades with others to handle the rest",
+    "a mid-sized community that has found a niche and built itself around it, with all the advantages and all the vulnerabilities that implies",
+    "a settlement old enough to have a history and small enough that the history is still visible in how people behave",
+    "a practical community that isn't trying to be bigger than it is, which has made it considerably better at what it actually does",
+  ]},
+  small:  { label:'Small Port',         cssClass:'size-small',  poiCount:[2,3], desc:[
+    "a small working port with a handful of permanent residents and a steady trickle of passing vessels that keep it viable",
+    "a minor outpost handling refuelling, basic repairs, and modest trade — not glamorous, but reliable",
+    "a quiet stop that most people pass through rather than stay at, which is how the residents prefer it",
+    "a port that was larger once and has accepted, with varying degrees of grace, that it no longer is",
+  ]},
+  huddle: { label:'Huddle',             cssClass:'size-huddle', poiCount:[2,2], desc:[
+    "a clutch of lashed-together structures that calls itself a settlement for reasons that seem optimistic on close inspection",
+    "a small, scrappy outpost held together by necessity, proximity, and a shared interest in not falling into the layer below",
+    "a temporary encampment that has been temporary for so long it has started to develop opinions about permanence",
+    "a waystation that has grown just past the point where anyone can be sure who lives here and who is just passing through",
+  ]},
+};
+
+// ─── COMMON POIs ──────────────────────────────────────────────────────────────
+const commonJunctions = [
+  ["The Damp Tooth","a low-ceilinged taproom built into the base of an ironroot trunk, its ceiling perpetually wet with condensation, its atmosphere perpetually warm"],
+  ["The Resting Sail","a spacious inn in a converted cargo vessel, the berths showing original fittings and the bar where the navigation table used to be"],
+  ["The Split Plank","a noisy dockside tavern known for both the quality of its ferment and the willingness of its regulars to settle disputes in the water below"],
+  ["The Long Watch","a quiet, elevated inn built across two connected platforms, favoured by navigators and avoided by anyone who values energetic company"],
+  ["Kessic's Place","a junction famous for one thing — a specific deep-root spirit made on the premises — and comfortable providing nothing else"],
+  ["The Salt Hour","a two-storey inn and eating house with rooms above and a galley-style kitchen below, feed first, drink after"],
+  ["The Crooked Mast","a tavern that has been many things and currently serves as the community's gathering point for anything too contentious for polite discussion"],
+  ["The Canopy Floor","a junction built at lower level, accessible by rope ladder from above, with a particular clientele and a particular discretion"],
+  ["The Still Rudder","a clean, quiet inn run by a former navigator who designed the berths for someone who lives on a ship and the bar for someone who needs to stop"],
+  ["The Bracket and Bowl","a Gau-run eating house with unusual food, excellent quality, and a social atmosphere that converts the uncertain into regulars"],
+  ["The Signal Light","an inn at the settlement's edge, its upper floor the best vantage for approaching vessels, its regulars heavy with people who have reasons to watch"],
+  ["The Twice-Moored","a floating tavern accessible by a short gangplank, moving with the settlement and occasionally not"],
+  ["The Lower Tap","a below-decks establishment that is exactly what it sounds like — cheap, loud, and entirely honest about both"],
+  ["The Canopy's Own","a well-regarded inn and eating house that has been the subject of a formal contract dispute for eleven years and runs regardless"],
+  ["The Ironhold Arms","an Ironbound-run establishment with a particular welcome for crew and a collection of vessel relics that has become its own attraction"],
+  ["The Pale Feather","a quiet junction known more for its food than its drink, with a cook whose talent is making preserved rations taste like something worth remembering"],
+  ["The High Bench","a split-level junction where the upper tier is for eating and the lower for everything else, and the distinction is observed with surprising strictness"],
+  ["The Crewed Vessel","a converted launch permanently moored and converted into a seven-berth inn and bar, seating twelve at a squeeze and doing so regularly"],
+  ["Old Keth's","a long-established taproom with no sign, no decoration, and no menu — you drink what there is and you find it sufficient"],
+  ["The Spore-Cap","a Gau-owned junction serving a cultivated fermented fungal drink of unusual quality and considerable local reputation"],
+  ["The Mooring Bell","an inn whose name comes from the bell struck every time a ship docks within sight, which has become atmosphere rather than interruption"],
+  ["The Wrapped Hold","a tavern and short-term storage operation combined — you can drink while your cargo is secured below, which suits certain clientele perfectly"],
+];
+
+const commonShops = [
+  ["The Trade Table","a general merchant with wide, unpredictable stock reflecting what has come through the port this season"],
+  ["Provision & Co.","a well-stocked provisions merchant selling sealed goods, long-shelf food, and supplies that keep crews functional"],
+  ["The Edge House","an arms merchant with a practical and honestly-priced inventory, organised by function rather than prestige"],
+  ["The Rope Yard","a materials supplier specialising in treated rope, canvas, and standard vessel hardware"],
+  ["The Sealed Shelf","a pharmacist and specialist supplier dealing in medicinals, crezzerin-resistant compounds, and carefully sourced treatments"],
+  ["Oss's Fresh Market","a produce operation selling whatever came up from the tangle-farms this morning, including things that may require explanation"],
+  ["The Arconautic Post","a small but well-organised shop dealing in focuses, crezzerin instruments, and technical arconautic materials"],
+  ["The Signal Room","a communications broker providing message relay, signal equipment, and a contact network that has value beyond the hardware"],
+  ["The Living Shelf","a combined plant and animal trader dealing in canopy specimens, useful fauna, and the equipment to work with both"],
+  ["The Charter House","a vessel services specialist handling repair contracts, crew placement, and navigation chart sales"],
+  ["The Leatherwright","a craftsperson working in processed hides and treated fabrics, producing armour, bags, belts, and vessel fittings to order"],
+  ["The Cartwright's Office","a navigation chart specialist selling both standard-issue charts and hand-drawn specialist surveys"],
+  ["The Tangle Market","an open-air stall selling raw canopy materials — unprocessed, interesting, without detailed provenance"],
+  ["The Physicker's Door","a medical practice offering treatment, triage, and basic supplies, run by someone who trained somewhere they don't discuss"],
+  ["The Instrument House","a seller of precision tools, navigation equipment, and mechanical components for vessel maintenance"],
+  ["The Crezzerin Factor","a specialist broker dealing in processed crezzerin compounds, legal and otherwise, with a measured approach to documentation"],
+  ["The Outfitter","a combined clothing and equipment seller providing practical gear for crew preparing for unusual conditions"],
+  ["The Salvage Room","a secondhand dealer in salvaged goods, old equipment, and pre-Verdancy finds of uncertain provenance"],
+  ["The Clockwork Post","a precision mechanic offering repair and modification alongside sales of components and small mechanisms"],
+  ["The Brass Counter","a currency broker and small-scale lender with a detailed awareness of exchange rates and a very good memory"],
+];
+
+const commonLandmarks = [
+  ["The Great Crane","an enormous salvage crane of pre-Verdancy origin, still functional, operated by the dockmaster's office and available for hire at significant cost"],
+  ["The Iron Archive","a fireproofed record-house storing the port's legal documents, ship manifests, and commercial agreements going back decades"],
+  ["The Spire","a communications mast on the settlement's highest point, operating a signal relay service and broadcasting a constant location tone"],
+  ["The Tangle Descent","a managed access point to the layer below, with maintained ladders, a monitoring station, and a register of who has gone down and not yet returned"],
+  ["The Physicker's Hall","a communal medical facility maintained by the settlement's administration, available to residents and, at a fee, to passing crew"],
+  ["The Leviathan Gallery","a long covered walkway built from leviathan bone, serving as both architectural feature and primary covered market"],
+  ["The Old Mechanism","a large arconautic device of unknown original purpose, maintained by a dedicated keeper, producing a constant low harmonic the locals have stopped noticing"],
+  ["The Remembrance Column","a carved ironroot pillar listing everyone lost from this settlement to the layers below and the creatures within them"],
+  ["The Deep Well","a managed water extraction point, the community's most critical non-mechanical infrastructure"],
+  ["The Tinkerer's Yard","an open public workspace with tools, benches, and mechanical equipment available for common use, maintained by a craftsperson collective"],
+  ["The Signal Beacon","a permanent chemical beacon marking this location to vessels at distance, maintained at the settlement's expense"],
+  ["The Crezzerin Monitor","a publicly visible instrument measuring ambient crezzerin density, updated hourly, positioned at the dock so arriving vessels can assess conditions"],
+  ["The Founders' Platform","a preserved section of the original structure from which the settlement grew, maintained as historical and sometimes ceremonial space"],
+  ["The Collective Hall","the settlement's primary meeting space, available to any group that books it, used for everything from council sessions to market disputes"],
+  ["The High Garden","a maintained growing space on the settlement's uppermost platform, providing fresh produce and something to argue about publicly"],
+  ["The Anchor Chain","a massive anchor chain embedded in the settlement's structure, its other end disappearing into the layer below — the reason the settlement doesn't drift, and the source of several ongoing anxieties"],
+  ["The Ironwright's Shop","a combined forge and fabrication facility that does structural repair for the settlement and contract work for visiting vessels"],
+  ["The Chart Room","a publicly accessible navigation archive maintained by the port authority, free for standard charts, paid for specialist surveys"],
+  ["The Hanging Market","a market suspended on rope platforms between two trunks, accessible from either side, with different traders depending on the day"],
+  ["The Workshop Row","a line of open-fronted craft workshops — woodworking, leather, fabric, mechanical — whose products supply both the settlement and passing trade"],
+];
+
+// ─── NAME GENERATOR ────────────────────────────────────────────────────────────
+const nameParts = {
+  pre: ["Ashan","Bitter","Black","Bone","Bracket","Breach","Brine","Broken","Canopy",
+    "Cinder","Cleft","Cold","Copper","Crook","Cross","Crow","Dark","Dead","Deep",
+    "Drown","Dust","Dry","Drift","Edge","Far","Fell","Flint","Fog","Fork",
+    "Gallow","Gasp","Ghost","Grim","Gut","Hallow","Hard","Hasp","Hitch","Hollow",
+    "Hook","Husk","Idle","Iron","Jaw","Jolt","Keel","Knack","Last","Latch",
+    "Lean","Lorn","Low","Mark","Mast","Mire","Mull","Murk","Nail","Notch",
+    "Null","Oak","Old","Open","Pale","Patch","Pitch","Plunge","Press","Prow",
+    "Rack","Rasp","Ridge","Riven","Rope","Rot","Salt","Scald","Scar","Seam",
+    "Shank","Shear","Shiver","Shore","Silt","Sink","Slack","Slant","Slate","Slow",
+    "Smelt","Snag","Spar","Spike","Split","Spool","Spur","Stave","Steep","Still",
+    "Stir","Strain","Strap","Stump","Sunder","Swift","Tack","Tangle","Taut","Torn",
+    "Trace","Trap","Tread","Trim","Troth","Tuck","Turn","Twice","Twist","Under",
+    "Vast","Vex","Wake","Warp","Watch","Whet","Whip","Wide","Wind","Wire",
+    "Worn","Wrack","Wraith","Wrent"],
+  suf: ["back","bank","bight","bite","bluff","born","brace","breach","break","bridge",
+    "brow","burn","cage","catch","chain","chase","claw","coil","cold","comb",
+    "crack","crest","cross","crown","cut","dale","dark","dawn","deep","dell",
+    "den","descent","door","down","drop","drum","edge","end","fall","fang",
+    "far","field","flats","fold","ford","fork","gate","gape","gap","gill",
+    "grasp","grip","grove","guard","gulch","gulf","haul","haven","head","heel",
+    "heft","hem","hinge","hold","hole","hook","horn","hull","husk","jaw",
+    "joint","keel","keep","knot","lace","lash","latch","ledge","length","line",
+    "lock","loop","loss","low","lure","mast","maw","meet","mend","mire",
+    "moor","mount","mouth","nail","neck","notch","null","pass","peak","pile",
+    "pin","pitch","plank","plunge","point","pool","port","post","press","pull",
+    "rack","rake","ridge","ring","rise","rock","root","rope","run","rung",
+    "sail","seam","set","shade","shank","shelf","shift","shore","shroud","sign",
+    "sink","spar","spike","spit","split","spool","spur","stave","stow","strain",
+    "strap","stump","surge","swing","tack","tail","tangle","taut","tear","thread",
+    "throat","tide","toll","tooth","tow","track","trap","tread","trim","troth",
+    "trunk","tuck","turn","vale","veil","vex","wake","warp","watch","weft",
+    "well","wend","whet","whip","wire","wrack","wrest","writ","yard","yaw"],
+  stand: ["Ashtallow","Bilewatch","Bitemark","Blackthorn","Bleakhook","Bonecatch",
+    "Brinemark","Coldseam","Crooktide","Crowstack","Darkward","Deadstow",
+    "Deepmark","Driftstone","Dustgate","Edgewood","Fallwatch","Fanghold",
+    "Farpost","Felthorn","Flintmast","Fogbreak","Gapwatch","Ghostprow","Greycoil",
+    "Grimalkin","Grimward","Gutlash","Hardfall","Harrowdale","Hatchwell",
+    "Holdfast","Hollowmark","Hookpoint","Huskgate","Idlemast","Ironmark",
+    "Jawstow","Knotwork","Lacedrift","Lanternfall","Lastport","Latchridge",
+    "Leanwatch","Lorngate","Lowmark","Lurework","Mirepost","Murktide","Nailpoint",
+    "Nettledown","Notchwash","Oldgate","Openfall","Palemark","Patchwork",
+    "Pitchfell","Plungework","Pressdown","Prowlmark","Rackwood","Raspthorn",
+    "Rimfall","Rivenpost","Rootwatch","Saltwork","Scaldmark","Scargate",
+    "Seamswell","Shankfall","Sheerfall","Shiftwood","Shiverock","Shoremark",
+    "Siltgate","Sinkpost","Slantridge","Slatemark","Slowburn","Smeltgate",
+    "Snagward","Sparcross","Spikefall","Splitwork","Spoolmark","Spurgate",
+    "Stavewatch","Steepmark","Stillwatch","Stormgate","Strainmark","Strapgate",
+    "Stumpfall","Sunderfall","Swiftmark","Tackboard","Tangleward","Tautwatch",
+    "Torngate","Tracemark","Trapfall","Treadgate","Trimpost","Trothmark",
+    "Trunkfall","Tuckgate","Turnwatch","Twistfall","Undermark","Vaultmark",
+    "Vexgate","Wakemark","Warpwatch","Watchfall","Weftmark","Whetstone",
+    "Whiptide","Wiregate","Wrackfall","Wrentgate","Yardmark"],
+  names: ["Brace","Breck","Cass","Corda","Darrak","Dray","Ell","Fell","Ferwick",
+    "Holt","Keth","Lucet","Maren","Merrik","Oss","Ossian","Pell","Ress",
+    "Sall","Sevet","Skell","Tam","Varrick","Vern","Wren","Yssel"],
+  midfx: ["'s Landing","'s Gate","'s Pass","'s End","'s Rest","'s Hold",
+    " Bay"," Crossing"," Point"," Ridge"," Watch"," Ford"," Run"," Mark"," Gap"," Post"],
+};
+
+function makeName() {
+  const r = Math.random();
+  if (r < 0.25) return pick(nameParts.stand);
+  if (r < 0.44) return pick(nameParts.pre) + pick(nameParts.suf);
+  if (r < 0.60) return pick(nameParts.names) + pick(nameParts.midfx);
+  if (r < 0.72) return "The " + pick(nameParts.pre) + pick(nameParts.suf);
+  return pick(nameParts.pre) + pick(nameParts.suf);
+}
+
+// ─── POI ASSEMBLY ─────────────────────────────────────────────────────────────
+function buildPOIs(count, layerKey) {
+  const special = layerData[layerKey].specialPOI || [];
+  const result = [];
+  const usedJ = new Set(), usedS = new Set(), usedL = new Set(), usedSp = new Set();
+
+  // Always one junction
+  addFrom(result, commonJunctions, usedJ, 'junction');
+
+  // Second junction if large enough
+  if (count >= 4) addFrom(result, commonJunctions, usedJ, 'junction');
+
+  // Add layer-specific POI if available (50% chance per slot, up to 2)
+  if (special.length > 0) {
+    const spCount = count >= 4 ? Math.min(2, special.length) : Math.min(1, special.length);
+    for (let i = 0; i < spCount; i++) {
+      let idx;
+      let tries = 0;
+      do { idx = Math.floor(Math.random() * special.length); tries++; } while (usedSp.has(idx) && tries < 20);
+      if (!usedSp.has(idx)) {
+        usedSp.add(idx);
+        const sp = special[idx];
+        result.push({ type: sp[2] || 'landmark', name: sp[0], desc: sp[1] });
+      }
+    }
+  }
+
+  // Fill remaining with shops and landmarks
+  while (result.length < count) {
+    const remaining = count - result.length;
+    const wantShop = result.filter(p => p.type === 'shop').length < Math.ceil(remaining * 0.5);
+    if (wantShop) addFrom(result, commonShops, usedS, 'shop');
+    else addFrom(result, commonLandmarks, usedL, 'landmark');
+  }
+
+  // Shuffle
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function addFrom(result, pool, used, type) {
+  let idx, tries = 0;
+  do { idx = Math.floor(Math.random() * pool.length); tries++; } while (used.has(idx) && tries < 50);
+  used.add(idx);
+  result.push({ type, name: pool[idx][0], desc: pool[idx][1] });
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let selLayer = 'any';
+let selSize  = 'any';
+let locCount = 0;
+let shopCount = 0;
+let npcCount = 0;
+
+function updateCount() {
+  const total = locCount + shopCount;
+  if (total === 0) { document.getElementById('gen-count').textContent = ''; return; }
+  const parts = [];
+  if (locCount > 0) parts.push(locCount + ' settlement' + (locCount === 1 ? '' : 's'));
+  if (shopCount > 0) parts.push(shopCount + ' shop' + (shopCount === 1 ? '' : 's'));
+  if (npcCount > 0) parts.push(npcCount + ' NPC' + (npcCount === 1 ? '' : 's'));
+  document.getElementById('gen-count').textContent = parts.join(', ') + ' generated';
+}
+
+function setLayer(l) {
+  selLayer = l;
+  document.querySelectorAll('#panel-settlements .filter-bar:nth-child(1) .f-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('layer-' + (l === 'any' ? 'any' : l));
+  if (btn) btn.classList.add('active');
+}
+
+function setSize(s) {
+  selSize = s;
+  document.querySelectorAll('#panel-settlements .filter-bar:nth-child(2) .f-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('size-' + (s === 'any' ? 'any' : s));
+  if (btn) btn.classList.add('active');
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function weightedPick(weights) {
+  const keys = Object.keys(weights);
+  const total = keys.reduce((s, k) => s + weights[k], 0);
+  let r = Math.random() * total;
+  for (const k of keys) { r -= weights[k]; if (r <= 0) return k; }
+  return keys[keys.length - 1];
+}
+
+// ─── GENERATE ─────────────────────────────────────────────────────────────────
+function generateLocation() {
+  const layerKey = selLayer === 'any' ? weightedPick(layerWeights) : selLayer;
+  const sizeKeys  = ['city','large','medium','small','huddle'];
+  const sizeKey   = selSize === 'any' ? pick(sizeKeys) : selSize;
+
+  const lData = layerData[layerKey];
+  const sData = sizeData[sizeKey];
+
+  const name = makeName();
+
+  // Foundation
+  const foundations = lData.foundations;
+  const foundation  = pick(foundations);
+  const foundDesc   = lData.foundationDescs[foundation];
+
+  // Overview + atmosphere
+  const overview = pick(sData.desc);
+  const atm      = pick(lData.atmospheres);
+
+  // POI count
+  const [min, max] = sData.poiCount;
+  const poiCount = min + Math.floor(Math.random() * (max - min + 1));
+  const pois = buildPOIs(poiCount, layerKey);
+
+  // Hooks — blend layer-specific hooks with thrash hooks for variety at surface
+  let hookPool = [...lData.hooks];
+  if (layerKey === 'thrash') {
+    // thrash has plenty
+  } else if (hookPool.length < 4) {
+    // supplement sparse deep layers with generic thrash hooks
+    hookPool = hookPool.concat(layerData.thrash.hooks.slice(0, 4));
+  }
+  // pick 2 distinct
+  const h1idx = Math.floor(Math.random() * hookPool.length);
+  let h2idx;
+  do { h2idx = Math.floor(Math.random() * hookPool.length); } while (h2idx === h1idx);
+  const hook1 = hookPool[h1idx];
+  const hook2 = hookPool[h2idx];
+
+  locCount++;
+  updateCount();
+  showCopyBar('copy-bar-loc');
+
+  const tagHTML = t => {
+    if (t === 'junction') return '<span class="poi-tag junction">junction</span>';
+    if (t === 'shop')     return '<span class="poi-tag shop">shop</span>';
+    return '<span class="poi-tag landmark">landmark</span>';
+  };
+
+  // Foundation label (human-readable)
+  const foundLabel = foundation.replace(/-/g, ' ');
+
+  const card = document.getElementById('loc-card');
+  card.className = 'loc-card populated';
+  card.innerHTML = `
+    <div class="loc-header">
+      <div class="loc-meta">
+        <span class="loc-badge ${lData.cssClass}">${lData.label}</span>
+        <span class="loc-badge ${sData.cssClass}">${sData.label}</span>
+        <span class="loc-badge found">${foundLabel}</span>
+      </div>
+      <div class="loc-name">${name}</div>
+      <div class="loc-tagline">${foundDesc}</div>
+    </div>
+    <div class="loc-sections">
+      <div class="loc-section full">
+        <span class="section-label">Overview</span>
+        <div class="section-text">${overview.charAt(0).toUpperCase() + overview.slice(1)} — ${atm}</div>
+      </div>
+      <div class="loc-section full">
+        <span class="section-label">Points of Interest</span>
+        <ul class="poi-list">
+          ${pois.map(p => `<li><strong style="color:#e8e4d8;font-weight:normal;">${p.name}</strong>${tagHTML(p.type)} — <span style="color:#888;font-size:0.9rem;">${p.desc}</span></li>`).join('')}
+        </ul>
+      </div>
+      <div class="loc-section">
+        <span class="section-label">Hook One</span>
+        <div class="section-text">${hook1}</div>
+      </div>
+      <div class="loc-section last">
+        <span class="section-label">Hook Two</span>
+        <div class="section-text">${hook2}</div>
+      </div>
+    </div>`;
+  void card.offsetWidth;
+}
+
+
+// ─── SHOP DATA ───────────────────────────────────────────────────────────────
+
+const shopTypes = {
+
+produce: {
+  label: 'Fresh Produce',
+  names: [
+    "The Green Hammer","Root and Stem","The Hanging Market","Canopy's Edge Greens",
+    "The Dewdrop Stall","Sprout and Vine","The Tangle Larder","Understorey Harvest",
+    "The Pale Farmer","Green Passage","Fresh from Below","The Rising Bough",
+    "The Honest Bushel","Leaf and Root Co.","Overhang Provisions","The Spore Shelf",
+    "The Wet Market","Tangle-Fresh","Bough and Basket","The Living Shelf",
+  ],
+  taglines: [
+    "Grown in the thrash, sold at the surface","Freshest above the canopy line","Direct from the deep-root farms",
+    "No salt, no smoke, just green","Everything harvested this morning","From the tangle, straight to you",
+    "What the canopy gives, we sell","Fresh, strange, and nutritious","The living larder of the port",
+    "Root to leaf, nothing wasted","Canopy-grown, port-sold","Pulled up fresh before dawn",
+  ],
+  overviews: [
+    "A cluster of wooden frames hung with ropes of drying fungi and baskets of fresh canopy greens. The smell alone draws buyers in from the dockside.",
+    "A flat-bed stall with a vivid awning of spider-silk, selling the contents of that morning's harvest from a small tangle-farm moored two hours below the port.",
+    "A surprisingly well-organised produce operation run from a converted cargo hold, with climate-controlled shelving keeping the more delicate specimens fresh.",
+    "An outdoor market pitch taking up the corner of a port square, where fresh produce is arranged by colour and size with a care that suggests genuine pride.",
+    "A small family operation selling direct from their farm-vessel: whatever came up today is what is for sale today, no more and no less.",
+    "A converted barge-stall with growing beds on the upper deck and a market below, so you can watch what you're buying still in the soil before it's cut for you.",
+    "A hole-in-the-wall greenery stall tucked into the base of a large trunk, selling rare canopy-adapted fruits and vegetables to anyone who knows to look for it.",
+    "A busy open-fronted shop where fresh produce is sold in bundles pre-made for common meal-sizes, efficient and well-organised.",
+  ],
+  appearances: [
+    "Soil-stained hands and an apron caked with earth and spore, the marks of someone who grows as much as they sell",
+    "A practical, weathered person with mushroom-dust in their hair and a genuinely enthusiastic manner when asked about their stock",
+    "Sun-darkened and lean, wearing the canvas smock of a canopy farmer, with leaves still tucked in the breast pocket",
+    "Short, efficient, and cheerful, moving around the stall at a pace suggesting they have three more things to do as soon as you leave",
+    "A large, quiet person with unusually gentle hands, handling each item with the care of someone who grew it personally",
+    "A crezzerin-touched Gau whose cap changes colour slightly depending on what they are handling — pink near bitterroot, blue near tangle-fruits",
+    "An older Ardent with the patient, still manner of a gardener, who smells of fresh earth and damp wood",
+    "A young Ektus working the stall alongside an elderly relative, both of them enormous and both of them kind",
+  ],
+  mannerisms: [
+    "Sniffs everything before handling it and considers this a perfectly normal quality check",
+    "Will tell you exactly which depth layer each item came from, unprompted, with genuine feeling",
+    "Refers to all their produce by name — not species names, personal names",
+    "Has opinions about how each item should be prepared and volunteers them freely",
+    "Wraps every purchase with unnecessary care, as if presenting a gift",
+    "Can identify a person's dietary needs by watching them examine produce for thirty seconds",
+    "Counts change aloud, slowly, making unbroken eye contact throughout",
+    "Speaks about the canopy's growing seasons with the gravity of someone discussing weather forecasts for a sea voyage",
+  ],
+  goods: [
+    ["Ironroot shoots","pale green, tender, slightly bitter — best eaten raw or barely blanched"],
+    ["Tangle-pear","heavy, dark-skinned fruit, sweet and fibrous, keeps for a week above the thrash"],
+    ["Canopy fig","small, intensely sweet, bruises easily — sell-today quality"],
+    ["Deepmoss greens","bitter leafy bundles harvested from the dark belt, iron-rich"],
+    ["Bitterroot","a knobbly tuber, medicinal-tasting, long shelf life"],
+    ["Spore-cap cluster","a variety of edible fungus growing in tight clusters, earthy and dense"],
+    ["Tangle-onion","small, pungent, purple-skinned — grows in seams between ironroot layers"],
+    ["Canopy lemon","sour, fragrant, crezzerin-adapted citrus analogue, useful for flavour and preservation"],
+    ["Vine-tomato","a sprawling canopy climber's fruit, red-orange, acidic and sweet"],
+    ["Crezzerin-touched melon","large, mottled green, faintly luminous rind, flesh tastes of honey and something else"],
+    ["Ironleaf herb","a robust flavouring herb with a sharp, piney taste, used dried or fresh"],
+    ["Pale mushroom","a large flat canopy fungus, mild flavour, almost white, grows in the low-light zone"],
+    ["Tangle-bean","a long seed-pod from the mid-tangle climbers, eaten whole or shelled"],
+    ["Bark-nut","a hard-shelled nut extracted from the base of certain ironroot varieties, rich and dense"],
+    ["Root-ginger analogue","a knobbly rhizome with a fierce warming flavour, rare above the mid-tangle"],
+    ["Canopy pepper","dried seed-pods from a climbing plant, producing significant heat when ground"],
+    ["Dew-flower bud","unopened blossoms of a high-canopy plant, sweet and faintly floral when eaten fresh"],
+    ["Deep-leaf spinach","large, dark, slightly waxy leaves from deep-tangle growth, nutritious and tough"],
+    ["Spore-truffle","a buried fungal body dug from compressed tangle substrate, intensely flavoured"],
+    ["Canopy cucumber","pale green, elongated, with a watery freshness entirely unlike anything from the deep"],
+    ["Heartwood berry","small, almost black berries growing on old ironroot side-shoots, tart and long-keeping"],
+    ["Tangle-squash","a robust green-orange gourd that grows in the mid-tangle and keeps for a month"],
+    ["Bright fungi","the vivid orange shelf fungi of the outer canopy, milder than they look"],
+    ["Old-canopy garlic","a small, pungent bulb growing among the deep roots, stronger than conventional garlic"],
+    ["Ironroot sap pod","a waxy pod filled with the thickened sap of young ironroot — sweet and sticky"],
+    ["Wet-season greens","leafy canopy plants that only appear after rain, mild and slightly crunchy"],
+    ["Crezzerin-bloom sprout","delicate crystal-blue sprouts grown in managed crezzerin exposure, mild flavour, valuable"],
+    ["Canopy herb bunch","a mixed bundle of whatever aromatic herbs are in season this morning"],
+    ["Tangle-chilli","a ferociously hot fruit from a deep-tangle climber, used sparingly"],
+    ["Deepwood root","a starchy tuber from the dark belt, earthy flavour, makes a solid meal when roasted"],
+  ],
+},
+
+food: {
+  label: 'Food & Provisions',
+  names: [
+    "The Salted Hold","Iron Rations","Provision & Co.","The Long Shelf",
+    "The Sealed Tin","Deep Larder","The Ship's Table","Tangle Pantry",
+    "Preserved and Proud","The Marching Pack","Oakwood Provisions","Hull-Side Grocers",
+    "The Canopy Larder","Last Port Provisions","The Well-Stocked","Stow and Sail",
+    "The Trade Larder","Storm Rations","The Honest Grocer","Bilge and Biscuit",
+  ],
+  taglines: [
+    "Provisions for long voyages and short purses","Everything you need, nothing you don't",
+    "Stocked for the sea, suited for the crew","The long shelf life of good food",
+    "From the galley to your hold","Preserving the best of the canopy",
+    "Ready for the waves","Better than what's below",
+    "Honest weight, honest measure","Fed and sailing",
+  ],
+  overviews: [
+    "A well-stocked provisions shop with neatly organised shelving and a proprietor who can estimate your voyage length by the size of your crew and quote accordingly.",
+    "A converted warehouse unit dealing in sealed goods: smoked, salted, preserved, dried. The smell is dense and not entirely pleasant but everything on the shelf will last.",
+    "A travelling provisions merchant who sells from the back of a moored wagon-vessel, stocked with the kind of non-perishable goods that long-haul crews come back for.",
+    "A small, precise shop dealing in specialist dietary provisions for different heritages, staffed by someone who knows the canopy's populations and what they require.",
+    "A cramped but impressively comprehensive grocer selling everything from cooking oil to long-shelf grain, with a side trade in rare imported seasonings.",
+    "A provisions operation run out of a wide-fronted shop with hanging garlands of dried insects and fungi, selling to vessels preparing for any journey length.",
+    "A merchant specialising in expedition rations: lightweight, calorie-dense, sealed and stackable, sold to crews who expect to be a long way from any port.",
+    "A family shop selling good, plain provisions to the crews of the port, with a side cabinet of harder-to-find items for those who ask.",
+  ],
+  appearances: [
+    "A broad-armed Ardent in a clean apron, systematic and neat, who has clearly weighed out ten thousand portions in their career",
+    "A thin Ironbound who moves with the precision of someone accustomed to small spaces, retrieving items from high shelving without looking",
+    "A middle-aged Gau with a carrying spore-aroma who knows the shelf life of everything in the building and will tell you unprompted",
+    "A sharp-eyed Ketra who calculates your order in their head faster than you can speak it and has the total before you finish the list",
+    "A slow-spoken, well-built older person whose recommendation for any voyage length is always slightly more than you think you need, and always right",
+    "A small, quick individual surrounded by shelving that reaches the ceiling, who ascends a sliding ladder without apparent thought to retrieve items",
+    "A crezzerin-touched Ektus whose spines have gone faintly blue from years of handling preserved crezzerin-treated goods",
+    "A cheerful young person in a stained apron who samples everything before selling it, offering you a taste of anything you ask about",
+  ],
+  mannerisms: [
+    "Estimates the caloric needs of a group by looking at them and quotes a trade value without being asked",
+    "Recommends one item per customer that they believe will make the difference on a long voyage",
+    "Annotates every purchase with a suggested preparation if asked, and sometimes if not",
+    "Will not sell a full expedition pack without asking the voyage length and destination first",
+    "Speaks about expiry dates with the solemnity appropriate to discussing tide charts",
+    "Offers a loyalty tally — a chalk mark on a board — for repeat customers, though the reward has not been specified",
+    "Repacks purchases more efficiently than the buyer managed, without comment, making space for more",
+    "Has strong feelings about the relative quality of smoked versus salted insect protein that they will share with anyone who stays still long enough",
+  ],
+  goods: [
+    ["Smoked giant insect portions","heavily smoked, high protein, long shelf life — staple of most long voyages"],
+    ["Rendered insect fat","cooking fat in sealed ceramic pots, stable for months"],
+    ["Hardtack biscuit","dense, dry, virtually indestructible — the ship's bread of last resort"],
+    ["Canopy grain flour","ground from dried ironroot-adjacent seeds, makes a heavy but sustaining bread"],
+    ["Salted bark-nut paste","a thick, salty protein paste sealed in wax — good for when cooking is impractical"],
+    ["Dried tangle-fruit","preserved sections of canopy fruit, chewy and intensely sweet"],
+    ["Long-shelf spore broth","a compressed block of dried fungi and root that dissolves into a hot, nutritious broth"],
+    ["Preserved protein cake","a dense compressed cake of ground insect and grain, ugly and effective"],
+    ["Cooking oil","pressed from insect fat and canopy seeds, sealed in stoppered bottles"],
+    ["Salt block","a large block of mineral salt for cooking and preserving"],
+    ["Spice bundle","a tied bundle of dried canopy herbs and flavourings, enough for a week's cooking"],
+    ["Iron ration pack","a pre-packed expedition kit — enough protein, fat, and dried food for one person for ten days"],
+    ["Fungal ferment","a sealed jar of crezzerin-safe fermented fungi, used as flavouring or probiotic"],
+    ["Dried insect whole","whole dried insects of various species, sold by weight — a versatile cooking ingredient"],
+    ["Canopy vinegar","sour fermented canopy-fruit liquid in a sealed bottle, used for preservation and flavour"],
+    ["Root sugar","crystallised concentrated canopy-root syrup, used in baking and brewing"],
+    ["Travel bread","a denser, longer-keeping version of regular bread, sealed in wax — edible for two weeks"],
+    ["Crezzerin-safe water treatment","a sealed sachet of mineral purifier for treating collected canopy water on the move"],
+    ["Mixed dried fungi","a variety bag of dried canopy mushrooms, good flavour, long shelf life"],
+    ["Preserved deep-root vegetable","a tin of canopy-pressure-sealed root vegetables — almost as good as fresh"],
+    ["Hard cheese analogue","a dense, long-keeping fermented product made from rendered fat and fungal cultures"],
+    ["Ship's jam","thick, sweet, preserved tangle-fruit — for morale more than nutrition"],
+    ["Protein stock concentrate","a dark, intensely flavoured paste made from reduced insect and fungal stock"],
+    ["Dried beans","canopy-adapted legumes, dried and bagged, a reliable source of nutrition and bulk"],
+    ["Voyage tea","a blend of dried canopy leaves and bark, steeped for a warming, slightly medicinal drink"],
+    ["Expedition salt mix","a prepared spice-and-salt mixture specifically designed to prevent cravings on long voyages"],
+  ],
+},
+
+weapons: {
+  label: 'Weapons & Equipment',
+  names: [
+    "The Iron Edge","Chainteeth & Co.","The Ready Hold","Sharpsmith's",
+    "The Armoury Stall","Cut and Carry","Steel and Silk","The Fighting Chance",
+    "The Prepared Crew","Hard Goods","The Bite Shop","Tangle-Proof Goods",
+    "The Campaign Supplier","Hull and Harm","The Practical Armoury","Edge and Weight",
+    "Ironwood Arms","The Outfitter","The Useful Shelf","The Necessary Edge",
+  ],
+  taglines: [
+    "Everything a crew needs to survive what's out there","Outfitting the wildsailor since the first crossing",
+    "No fancy names, just reliable tools","For the work that needs doing",
+    "Quality armament, honest trade","What you carry keeps you alive",
+    "The sea doesn't care — your gear should","For the crew that intends to come back",
+    "Sharp, strong, well-made","From the first fight to the last port",
+  ],
+  overviews: [
+    "A well-lit arms shop with every item on display and a proprietor who will give you an honest assessment of which one suits you and which one doesn't.",
+    "A cluttered but comprehensively stocked equipment supplier selling everything from personal arms to hull-repair kits, with a side cabinet of harder-to-source items.",
+    "A former soldier's operation: clean, functional, everything tested before it goes on the wall, with a blunt and expert approach to customer service.",
+    "A multi-supplier arms market crammed into a single shopfront, selling weapons and equipment from multiple crafters and ports, with obvious variation in quality.",
+    "A serious armoury dealing primarily with ironteeth-compatible crew equipment, attracting clients from larger vessels who appreciate the quality of the specialist stock.",
+    "A light-fronted equipment shop with a focus on personal protection and crew readiness, selling armour, blades, and climbing gear alongside more standard equipment.",
+    "A discreet establishment — the sign is small, the window opaque — selling functional equipment to those who know where to find it and why they need it.",
+    "A lively trade post selling weapons and gear to the mixed crews of a busy port, loud, crowded, and impressively well-stocked for the apparent chaos.",
+  ],
+  appearances: [
+    "A heavily scarred individual with a direct gaze and no patience for browsing — ask what you need, and they'll tell you if they have it",
+    "A methodical, precise person with an armourer's hands and the habit of picking up and replacing every item a customer touches",
+    "A calm, unhurried Ironbound whose body incorporates several of their own wares as practical modifications",
+    "A compact, alert individual who assesses every new customer once, quickly, and appears to keep the assessment",
+    "A former wildsailor whose personal gear is on prominent display as advertising, each item telling a story they're willing to share",
+    "A large, deliberate Ektus who handles every weapon they sell with a care that seems affectionate",
+    "A young specialist with a methodical manner who knows the provenance and specifications of every item in the shop",
+    "An older dealer with the weathered manner of someone who has carried most of what they sell at some point and has opinions accordingly",
+  ],
+  mannerisms: [
+    "Demonstrates the weight and balance of any item a customer shows interest in, without being asked",
+    "Will not sell a weapon to someone who cannot answer two basic questions about how to use it",
+    "Keeps a running commentary on the quality differences between similar items on the shelf",
+    "Has the habit of recommending the second-most-expensive option rather than the most expensive one",
+    "Asks what you're going up against before recommending anything",
+    "Inspects any item brought in for appraisal with visible, unguarded interest before giving a value",
+    "Maintains a blacklist of customers who have damaged equipment through negligence and will not sell to them again",
+    "Explains the care requirements for every item sold, whether the buyer asks or not",
+  ],
+  goods: [
+    ["Chainsaw blade set","replacement blades for standard vessel ironteeth, two sizes, in oiled wrapping"],
+    ["Boarding axe","a short, heavy single-handed axe designed for close work in tight spaces"],
+    ["Tangle knife","a long, heavy-bladed utility knife built for cutting through dense canopy material"],
+    ["Ironwood short sword","a processed ironroot blade with a steel edge, lighter than it looks"],
+    ["Crossbow, standard","a reliable repeating crossbow, canopy-adapted for damp and impact"],
+    ["Crossbow bolts","twenty bolts in a sealed oiled quiver, standard gauge"],
+    ["Padded crew vest","a heavy-layered insect-silk vest providing protection without restricting movement"],
+    ["Ironroot shield","a laminated ironroot disc, lightweight and surprisingly resilient"],
+    ["Grappling hook and line","a folding three-hook grapple with thirty metres of spider-silk line"],
+    ["Signal flare kit","six chemical flares in a waterproofed case, two colours"],
+    ["Climbing harness","a padded ironroot-fibre harness with quick-release buckles"],
+    ["Hull-repair kit","hammers, sealant, patching panels — enough for one significant impact repair"],
+    ["Crew pistol","a single-shot chemical-propellant firearm, short range, reliable"],
+    ["Pistol ammunition","twenty charges in a waterproofed box, standard calibre"],
+    ["Ironteeth maintenance kit","lubricating oils, adjustment tools, and blade-honing equipment"],
+    ["Armoured gloves","reinforced ironroot-weave gauntlets — protection with workable grip"],
+    ["Trip-wire kit","a spool of fine canopy-wire with hooks and tension pins, for perimeter defence"],
+    ["Smoke canister","a sealed chemical canister releasing thick white smoke — cover and distraction"],
+    ["Rope ladder","fifteen metres of heavy knotted rope with ironwood rungs"],
+    ["Tangle machete","a wide, heavy blade for cutting through dense undergrowth — used as weapon or tool"],
+    ["Personal anchor spike","a drive-in spike with a locking eye, for fixing a line to ironroot"],
+    ["Crow's beak hook","a specialist boarding and climbing tool, heavy single hook on a short shaft"],
+    ["Hardened rope","treated spider-silk rope, cut-resistant, thirty metres in a coil"],
+    ["Throwing knife set","four weighted knives in a belt-roll, balanced for distance throwing"],
+    ["Padded helmet","an ironroot-weave cap with side guards — minimal, light, effective"],
+    ["Waterproofed belt kit","a multi-pouch belt in crezzerin-treated leather, holds tools and small items"],
+  ],
+},
+
+materials: {
+  label: 'Materials & Supplies',
+  names: [
+    "The Timber Yard","Rope and Board","The Builder's Hold","Ironroot & Supply",
+    "The Raw Shelf","Craft and Carry","The Merchant's Store","Keel & Timber",
+    "The Material Well","Oak & Wire","The Good Plank","Hull Supply Co.",
+    "The Honest Merchant","Wrack and Ready","Yard Goods","The Structural Store",
+    "Tangle Materials","The Trade Shelf","The Port Merchant","Hard Materials",
+  ],
+  taglines: [
+    "Everything a vessel needs to keep sailing","The raw materials of the wildsea life",
+    "From the tangle to the workshop","Built for the waves, sold from the port",
+    "What holds the ship together","Materials for the long voyage",
+    "Quality stock, honest measure","The builder's first stop",
+    "Where vessels are repaired and remade","Everything structural, everything essential",
+  ],
+  overviews: [
+    "A large, open-fronted materials yard selling ironroot timber, rope, canvas, and hardware to anyone maintaining or building a vessel.",
+    "A compact merchant operation dealing in processed materials — sealed, measured, and sold by weight or length to buyers who know what they need.",
+    "A trade post selling raw and processed canopy materials, with a sideline in salvaged pre-Verdancy hardware sold at a premium for its reliability.",
+    "A materials broker who doesn't stock everything but can source almost anything given two days and the right advance.",
+    "A warehouse-front selling the kind of bulk materials — rope, timber, canvas, chemical sealant — that vessel maintenance demands in quantity.",
+    "A specialised supplier dealing in crezzerin-treated materials for vessels operating in reactive zones, expensive but necessary.",
+    "A general merchant carrying a surprisingly broad inventory: timber, rope, fasteners, canvas, oil, chemical sealant, and a surprising selection of tools.",
+    "A family-run materials business where everything is traded on an old system nobody else uses but which turns out, on reflection, to be entirely fair.",
+  ],
+  appearances: [
+    "A large, sawdust-covered person with a measuring tape permanently around one wrist and a pencil behind one ear",
+    "A meticulous individual who handles every piece of stock with the care of someone who cut and processed it themselves",
+    "A broad-handed trader who names trades without hesitation and has clearly done so many thousands of times",
+    "A quiet, efficient operator whose physical size allows them to handle heavy stock without help, which they clearly prefer",
+    "A sharp-eyed Ardent with ink-stained fingers who records every transaction in a ledger that appears to contain the entire history of every sale",
+    "A cheerful and chaotic Gau whose cap changes colour depending on which material they've been working with most recently",
+    "An older Ketra with a systematic approach to stock management and a faint constant glow from long exposure to processed materials",
+    "A young, precise person who knows the specification of every item in stock and will not accept a vague order without clarification",
+  ],
+  mannerisms: [
+    "Measures everything twice before naming a trade, and is visibly annoyed if the first measurement is confirmed",
+    "Has strong opinions about which wood species is appropriate for which application and will redirect you if you're wrong",
+    "Refers to all materials by their processing grade rather than their common name",
+    "Offers credit to known vessel operators but will discuss the terms at considerable length before agreeing",
+    "Can estimate the material requirements for any described vessel repair by sight and provides the estimate unprompted",
+    "Refuses to trade substandard materials even at a discount, directing buyers to the correct stock instead",
+    "Samples every batch of rope before it goes on the shelf by pulling a measured length to near-breaking point",
+    "Has a different trade offer for buyers who ask good questions and buyers who don't",
+  ],
+  goods: [
+    ["Ironroot plank","processed structural timber, standard vessel-grade, sold by the metre"],
+    ["Hemp-equivalent rope","heavy-grade canopy-fibre rope, tested strength, sold by the coil"],
+    ["Spider-silk rigging line","finer, stronger, and significantly more expensive than standard rope"],
+    ["Canvas sheeting","heavy woven canopy-fibre cloth, treated for water resistance, sold by the bolt"],
+    ["Iron fasteners","a mixed bag of bolts, spikes, and joining plates, standard vessel grade"],
+    ["Ironroot sealant","a thick, resinous sealing compound for hull gaps and timber joints"],
+    ["Chemical lubricant","a vessel-grade lubricating compound for ironteeth and engine mechanisms"],
+    ["Crezzerin-treated timber","standard plank timber coated in crezzerin-resistant sealant for reactive zones"],
+    ["Copper sheet","rolled copper in standard vessel-hull patch size — expensive but watertight"],
+    ["Oakum equivalent","processed canopy fibre for caulking hull seams, sold by the bag"],
+    ["Timber batten","thin structural strips used in repairs and light construction"],
+    ["Wire rope","woven metal-fibre cable for heavy rigging and structural use"],
+    ["Wood resin","a raw processed canopy resin for adhesion and surface treatment"],
+    ["Standard nail bag","mixed-length wrought nails, vessel-grade, five hundred to a bag"],
+    ["Canvas thread","heavy waxed thread for sailmaking and repair, sold on large spools"],
+    ["Structural bracket set","twelve pre-drilled iron brackets in standard vessel sizes"],
+    ["Crezzerin-resistant fabric","a treated heavy canvas for use in reactive areas — covers, bags, wrapping"],
+    ["Tallow equivalent","rendered animal fat for waterproofing and wood treatment, in sealed tins"],
+    ["Ironroot dowel set","pre-cut pegs in four sizes, used in joints and repairs"],
+    ["Heavy chain","processed iron chain, sold by the metre, standard anchor and deck use"],
+    ["Insulating batt","a thick canopy-fibre mat used for thermal insulation in below-deck spaces"],
+    ["Paint, hull-grade","a thick crezzerin-tolerant paint for hull and structural surfaces, in cans"],
+    ["Sailcloth repair kit","pre-cut patches, waxed thread, and a heavy needle in a sealed pouch"],
+    ["Treated leather","heavy, water-resistant processed hide for seals, gaskets, and equipment straps"],
+    ["Copper rivets","a bag of copper-headed rivets for hull work and light structural joining"],
+    ["Mixed tool bag","hammers, planes, chisels, and files — a working carpenter's starter kit"],
+  ],
+},
+
+tavern: {
+  label: 'Tavern & Spirits',
+  names: [
+    "The Leaking Hull","The Canopy's Edge","The Drowned Port","The Second Anchor",
+    "The Tangle and Glass","The Storm Watch","The Deep Tap","The Ironroot Arms",
+    "The Crezzerin Light","The Dead Reckoning","The Bilge Door","Last Port",
+    "The High Canopy","The Lashed Deck","The Waiting Tide","Forty Fathoms",
+    "The Ship's Lantern","Below the Thrash","The Rough Crossing","The Living Hold",
+  ],
+  taglines: [
+    "Open as long as there's someone willing to drink","The best bad decision between here and the next port",
+    "Where the crew meets after the work","Drink, eat, sleep — in that order",
+    "You've earned it","The cleanest establishment on this particular dock",
+    "The tangle's finest ferments","A port in every storm",
+    "No questions, reasonable trades","Better company than you left behind",
+  ],
+  overviews: [
+    "A low-ceilinged but well-lit taproom with long communal tables, a blackboard menu of rotating ferments, and a proprietor who remembers what everyone drinks.",
+    "A proper port tavern: loud, warm, three different things fermenting behind the bar at any time, and a lockable back room available for private meetings.",
+    "A small, quiet establishment in a side alley, specialising in rare and unusual spirits from across the canopy with a knowledgeable proprietor and no background noise.",
+    "A large, open-hall tavern with a working kitchen, a bar running the full back wall, and the kind of organised chaos that suggests it has been running successfully for decades.",
+    "A converted cargo vessel serving as a floating tavern, moored permanently at the dock with a gangplank permanently lowered and the lights permanently on.",
+    "A deliberately unremarkable-looking establishment that is, on the inside, considerably more comfortable and better-stocked than it appears from the outside.",
+    "A specialist spirits merchant with a small tasting area, selling rare and imported ferments to buyers who know what they're after and can describe it precisely.",
+    "A lively port institution that has been operating under the same name for thirty years and under the current proprietor for twelve, each making it more their own.",
+  ],
+  appearances: [
+    "A broad-framed individual with a warm, measuring manner — assessing your trouble level before you open your mouth",
+    "A thin, precise person moving behind the bar with the calm efficiency of someone who has been doing this for longer than they look",
+    "A heavily-tattooed ex-wildsailor whose change of career was recent enough that the sea-habit is still visible in everything they do",
+    "A large, unhurried Ektus who carries three full pitchers in one hand and never spills a drop",
+    "A sharp-eyed Gau who remembers every drink ordered by every customer in the past month and will greet you with your usual before you ask",
+    "A cheerful, rapid-speaking Ardent who runs the bar at a speed that suggests there are more orders than anyone can see",
+    "An older, quiet person who speaks rarely, pours generously, and can remove difficult customers from the premises with no fuss",
+    "A gregarious trader who tells everyone that this tavern is temporary until the right opportunity comes along, and has been saying this for eight years",
+  ],
+  mannerisms: [
+    "Remembers every drink ordered by a returning customer and has it ready before they reach the bar",
+    "Has a story involving every spirit on the shelf and tells them on request with evident relish",
+    "Never asks a customer's business but is clearly recording everything said within earshot",
+    "Refuses to serve anyone they consider already drunk, and is both firm and kind about it",
+    "Offers a small free pour to first-time customers — a sample of whatever they're proudest of this week",
+    "Has strong opinions about which spirits complement which food and volunteers them as recommendations",
+    "Can estimate how long a crew has been at sea by what they order first",
+    "Wipes the bar in a continuous and unconscious circular motion during any conversation longer than twenty seconds",
+  ],
+  goods: [
+    ["Canopy ferment, standard","a reliable mid-strength fermented canopy-grain drink, clean and local"],
+    ["Deep-root spirit","a strong distilled spirit from deep-tangle root, smoky and warming"],
+    ["Tangle-fruit wine","a light fermented fruit drink, slightly sweet, surprisingly complex"],
+    ["Spore-ale","a bitter, cloudy fermented drink made with specific canopy fungi, an acquired taste"],
+    ["The house brew","whatever is fermenting this week — it changes, it varies, it is always interesting"],
+    ["Old-canopy reserves","aged spirit from a run made several years ago, sold by the small glass"],
+    ["Crezzerin-touched spirit","a spirit fermented in crezzerin-adjacent conditions — faintly luminous, unusual flavour"],
+    ["Medicinal root tea","a hot, strongly flavoured canopy-root tea, genuinely medicinal if drunk correctly"],
+    ["Deep-sink water, clean","confirmed clean, tested, from a managed spring — people pay for certainty"],
+    ["Fruit cider analogue","a light, tart fermented canopy-fruit drink, lower strength than the ales"],
+    ["Imported port spirit","a traded spirit from a distant port, rare here, costs what it costs"],
+    ["Bottled ferment, sealed","a sealed bottle of house ferment to take away — the same as the cup version but lasts"],
+    ["Rare spirit, ask about","a bottle behind the bar the proprietor doesn't advertise — they'll tell you what they want for it"],
+    ["Ship's ration rum analogue","a strong, practical spirit designed for long voyages rather than enjoyment"],
+    ["Fermented fungi spirit","distilled from a particular deep-root fungal culture, earthy and unusual"],
+    ["House meal of the day","whatever the kitchen is making — it changes, it's honest, it fills you"],
+    ["Smoked insect platter","a sharing plate of various smoked canopy insects with a dipping sauce"],
+    ["Salt-bread and fat","simple, cheap, reliable — hard bread and rendered fat, the sailor's standby"],
+    ["Crew bowl","a large portion of the day's stew — protein, root, fungi, enough for one person"],
+    ["Nightcap blend","a warm, lightly fermented drink with calming properties, served before sleep"],
+    ["Canopy beer, cold","chilled via chemical means, a luxury — the same brew but significantly better cold"],
+    ["Long-stay room","a hammock in the crew quarters above — four to a room, clean enough"],
+    ["Private room","a locked single room, a cot, a table, a locking door — no questions"],
+    ["Bar tab, open","open-ended credit for the evening — they'll tally at end of night"],
+    ["Bottle to go, wrapped","any spirit from the shelf, sealed and wrapped for travel"],
+    ["Crew celebration package","a reserved long table, two pitchers, and a meal for up to eight — for the special occasion"],
+  ],
+},
+
+arconautic: {
+  label: 'Arconautic & Devices',
+  names: [
+    "The Crystal Shop","Resonance & Co.","The Working Instrument","The Quiet Mechanism",
+    "The Arconautic Stall","Hymn and Device","The Focused Object","Deep Signal",
+    "The Precise Instrument","Crystal and Craft","The Working Focus","Canopy Devices",
+    "The Resonant Hold","The Attuned Workshop","The Signal Room","Instrument and Arcana",
+    "The Tangle Focus","The Still Object","Crezzerin Works","The Measured Response",
+  ],
+  taglines: [
+    "Devices for the sea that is and the world that was","The focused instruments of the canopy",
+    "What the arconauts use, sold to those who ask","Where the technical and the strange meet",
+    "For those who know what they need","Precision instruments for an imprecise world",
+    "The careful craft of the canopy","Making the unusual useful",
+    "Devices that work, instruments that listen","For the navigator of strange waters",
+  ],
+  overviews: [
+    "A quiet, well-organised shop selling arconautic devices, precision instruments, and crezzerin-related tools, with a proprietor who can explain what anything does if asked.",
+    "A cramped, fascinating space crammed with devices and instruments of varying ages and origins, running the spectrum from reliable everyday tools to genuinely unusual one-offs.",
+    "A specialist trader dealing in arconautic focuses and interaction devices, with a back room for demonstrations and a policy of not selling anything they can't explain.",
+    "A technically precise instrument shop maintaining a small but high-quality inventory of devices for navigation, crezzerin interaction, and arconautic working.",
+    "A combined workshop and sales space, where the proprietor makes and repairs the devices they sell, with an emphasis on function over appearance.",
+    "A well-funded arconautic supply specialist catering to serious arconaut practitioners and vessel operators who need reliable technical equipment.",
+    "A nondescript frontage concealing a surprisingly deep inventory of arconautic materials, crezzerin samples, and functional devices for practitioners and researchers.",
+    "A mobile merchant operating from a very well-organised set of cases, selling a curated selection of arconautic devices and crezzerin-processed materials at fair trades.",
+  ],
+  appearances: [
+    "A precise, quiet individual who handles every device with extreme care and will decline to sell to anyone who doesn't understand what they're buying",
+    "A Ketra with bio-electric modifications visible at both wrists who clearly built several of the devices on the shelf themselves",
+    "An older arconaut in practical clothing who speaks very quietly about the things in the shop as if half the conversation is for their own benefit",
+    "A young, technically brilliant individual who can explain any device in extensive detail and becomes visibly excited when a customer asks an interesting question",
+    "A calm, methodical Gau whose cap bioluminesces in different colours near different crezzerin compounds in a way that is clearly deliberate",
+    "A retired wildsailor-arconaut who opened this shop because it made more sense than sailing and because the inventory keeps them close to interesting objects",
+    "A person of no obvious heritage who wears crezzerin-reactive clothing — it shifts slightly in response to nearby resonance — and appears entirely unbothered by this",
+    "A sharp-minded individual of few words who demonstrates devices rather than describing them and considers this a more efficient use of everyone's time",
+  ],
+  mannerisms: [
+    "Asks two technical questions before discussing terms, to assess whether the buyer knows what they want",
+    "Demonstrates every device before selling it, without exception, even for repeat customers",
+    "Will explain the mechanism of any device at length if asked — and at length if not asked",
+    "Refuses to sell crezzerin-reactive materials to anyone not carrying appropriate containment",
+    "Has a personal opinion about the quality of every item in the shop and ranks them visibly, the best nearest the counter",
+    "Pauses conversations to make a note whenever a customer says something they find technically interesting",
+    "Repairs devices for existing customers at a reduced rate as a matter of policy — they consider it quality assurance",
+    "Has no patience for customers who describe what they want in non-technical terms and gently redirects them to what they probably mean",
+  ],
+  goods: [
+    ["Standard arconautic focus","a smooth, processed crezzerin crystal suited for basic focusing work — reliable grade"],
+    ["Crezzerin sample vial, inert","a safely sealed vial of chemically inert crezzerin compound, for study or testing"],
+    ["Resonance gauge","a calibrated instrument for measuring crezzerin density in the immediate environment"],
+    ["Hymn-fragment, sealed","a wax-stoppered flask containing a segment of captured deep-song"],
+    ["Navigation compass, adapted","a modified compass with a secondary dial tracking crezzerin gradient rather than magnetic north"],
+    ["Signal amplifier","a portable device that boosts standard signal equipment range by a factor of three"],
+    ["Crezzerin suppression pack","a treated sealed bag containing a standard-grade crezzerin exposure suppressant compound"],
+    ["Attuned listening device","a precision instrument for detecting structured sound — hymn-fragments, deep-signals — at range"],
+    ["Personal focus stone","a smaller, rough-cut crystal for individual arconautic work — affordable grade"],
+    ["Crystal resonance map","a processed crezzerin chart of local reactive zones, updated within the last three months"],
+    ["Chemical battery, precision grade","a high-output battery for powering arconautic instruments — more stable than standard"],
+    ["Crezzerin-reactive cloth","a small swatch of cloth that responds to crezzerin proximity — use in detection and testing"],
+    ["Mechanical voice recorder","a clockwork device that captures and replays a short message via vibrating rods"],
+    ["Depth-reading sonar","a hull-mounted device reading depth below the canopy surface using vibration"],
+    ["Arconautic reference text","a printed guide to common focusing practices — general-grade, practical, useful to novices"],
+    ["Deep-signal receiver","a device for detecting artificial signal patterns at range — basic sensitivity grade"],
+    ["Crystal cutting tools","a set of precision instruments for shaping and splitting crezzerin crystals"],
+    ["Exposure suit liner","a treated inner layer reducing crezzerin skin contact — fits under standard clothing"],
+    ["Focus holder, portable","a carrying case holding and stabilising a standard focus crystal during transport"],
+    ["Crezzerin-grade goggles","treated-lens goggles that filter crezzerin vapour effects on vision in reactive zones"],
+    ["Harmonic tuning fork","a precision fork calibrated to a deep-tangle frequency — used in hymn-work and resonance testing"],
+    ["Arconautic notebook","a crezzerin-treated waterproofed notebook with reference tables for common focusing calculations"],
+    ["Repaired focus, second-grade","a cracked and re-set focus crystal — works reliably at reduced output"],
+    ["Signal beacon, portable","a self-powered chemical beacon that broadcasts a locator signal for forty-eight hours"],
+    ["Reaction test kit","a small set of crezzerin-reactive test strips for identifying compound type in the field"],
+    ["Precision optical lens","a ground glass lens for arconautic instrument work — high optical clarity"],
+  ],
+},
+
+animals: {
+  label: 'Animals & Hunting',
+  names: [
+    "The Tangle Trap","The Living Hold","Tooth and Claw","The Hunt Supply",
+    "The Beast Broker","The Canopy Menagerie","Catch and Trade","The Creature Market",
+    "The Hunter's Outfitter","The Specimen Stall","The Taming Post","Fang and Feather",
+    "The Beastwright","The Canopy Collector","Viable Creatures","Living Goods",
+    "The Deep Hunter","The Keeper's Trade","The Lure and Line","The Good Quarry",
+  ],
+  taglines: [
+    "Everything that lives, lives here","For the hunt, the harvest, and the hold",
+    "The canopy's creatures, traded fairly","Caught live, sold responsibly",
+    "For hunters, naturalists, and everyone between","Rare, useful, or simply extraordinary",
+    "What the tangle yields, we sell","Alive, asleep, or preserved — your choice",
+    "The creatures of the canopy, offered to the curious","From below the thrash, onto the shelf",
+  ],
+  overviews: [
+    "A noisy, aromatic establishment dealing in live canopy creatures, hunting equipment, and the preserved specimens of anything that couldn't be kept alive.",
+    "A combined hunter's outfitter and creature trader, selling traps, lures, and equipment alongside live animals and freshly preserved specimens.",
+    "A surprisingly calm animal broker's operation where live creatures are kept in well-maintained enclosures and sold to naturalists, crews, and the occasional enthusiast.",
+    "A hunting supply specialist with a side trade in live and preserved creatures, run by someone who clearly knows exactly what they're selling and where it came from.",
+    "A compact but well-stocked trader dealing in hunting equipment, pest management solutions, and a selection of unusual live canopy creatures for those with a specific need.",
+    "A naturalist's supply shop trading in live specimens, preserved collections, and the equipment for those intending to create either.",
+    "A market stall dealing in live canopy insects and small animals, hunting equipment, and a back shelf of preserved specimens in sealed containers.",
+    "A hunter's broker operating from a broad, open-fronted shop with enclosures on three walls and equipment racks on the fourth, smelling strongly of animal and less strongly of something chemical.",
+  ],
+  appearances: [
+    "A patient, deliberate person with the particular stillness of someone who spends time around nervous animals",
+    "A lean, quick individual with bite marks and claw-scratches on both forearms, apparently unconcerned by them",
+    "A large, gentle Ektus whose natural height and stillness mean the animals in the enclosures are calmer in their presence",
+    "A Gau naturalist whose mycelial threads are faintly extended when they stand near certain creatures, some kind of unconscious sensing",
+    "A weathered hunter-trader with the practical, direct manner of someone who has no interest in selling you something you don't need",
+    "A young person with encyclopaedic knowledge of every creature in the shop and a visible enthusiasm for sharing that knowledge",
+    "An older, quiet individual who has clearly been doing this for decades and finds most customer questions predictable but doesn't say so",
+    "A precise, methodical dealer who keeps meticulous records of every creature's origin, condition, and care requirements",
+  ],
+  mannerisms: [
+    "Describes every creature by behaviour first, appearance second — what it does is more useful than what it looks like",
+    "Will not sell a live creature without asking what the buyer intends to do with it",
+    "Handles every animal in the shop regularly, including the ones they're not currently selling",
+    "Has strong opinions about which creatures make useful crew companions and which do not",
+    "Speaks about the creatures in their care with genuine affection that doesn't prevent them from selling them",
+    "Offers care instructions for every live animal sold, whether or not they're asked",
+    "Can identify any canopy creature by sound, smell, or movement before seeing it",
+    "Keeps detailed records of every sale and periodically contacts buyers to check on purchased animals",
+  ],
+  goods: [
+    ["Canopy rat trap","a spring-loaded trap for controlling the small canopy rodents that infest most vessels"],
+    ["Hunting crossbow","a compact, lighter crossbow designed for creature hunting — shorter range, faster loading"],
+    ["Pest deterrent compound","a chemical spray that discourages common canopy insects from nesting in a space"],
+    ["Live bark-beetle, small","a docile small beetle kept for pest control — eats specific problem insects"],
+    ["Canopy bird, trained","a canopy-adapted bird conditioned to return to a keeper — useful for messaging or reconnaissance"],
+    ["Specimen preservation kit","a set of chemical preservatives and sealed containers for creating preserved specimens"],
+    ["Tracking lure, insect","a canopy-derived scent compound that attracts specific insect species"],
+    ["Hunting net","a wide-throw weighted net for live capture of mid-sized canopy creatures"],
+    ["Creature cage, travel","a ventilated, lightweight ironroot-frame cage for transporting small live animals"],
+    ["Live canopy lizard","a hardy, docile lizard that eats common ship pests and tolerates confined spaces"],
+    ["Crezzerin-hound","a canopy animal with sensitivity to crezzerin vapour, trained to signal on detection"],
+    ["Arrow tips, broadhead","specialist hunting arrowheads for clean capture — designed to wound but not kill"],
+    ["Animal sedative compound","a precise measured compound for safely immobilising a creature for capture or transport"],
+    ["Deep-tangle lure set","a collection of scent and sound lures for attracting deep-tangle fauna to a trap site"],
+    ["Live colony insect jar","a sealed jar containing a small working insect colony — for study or controlled breeding"],
+    ["Preserved specimen, small","a chemically preserved and sealed small canopy creature — species varies by current stock"],
+    ["Hunting blind materials","canvas, clips, and support poles for building a portable concealment structure"],
+    ["Signal whistle, creature-call","a precision whistle calibrated to a specific canopy creature's call response"],
+    ["Creature restraint kit","padded harnesses, lead lines, and muzzle equivalents in three sizes"],
+    ["Naturalised canopy bird, pair","a bonded pair of canopy birds kept in managed conditions — sold together only"],
+    ["Spider-silk catch bag","a soft, wide-mouthed bag of spider-silk mesh for live small-creature capture"],
+    ["Preserved deep-creature","a sealed preserved specimen from below the thrash — species unusual or unremarkable as noted"],
+    ["Hunting journal, current season","a printed guide to creature behaviour and ranges for this season's canopy conditions"],
+    ["Creature transport case, large","a reinforced case for transporting a mid-sized live creature safely"],
+    ["Live canopy moth","a large, docile canopy moth kept for bioluminescence — a practical and attractive vessel companion"],
+    ["Butchery kit, full","the tools required to process a large canopy creature — hooks, blades, and a folding frame"],
+  ],
+},
+
+}; // end shopTypes
+
+let selectedType = 'any';
+
+
+function setType(t) {
+  selectedType = t;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.type-btn').forEach(b => {
+    if ((t === 'any' && b.textContent.trim() === 'Any') || b.getAttribute('onclick') === `setType('${t}')`) {
+      b.classList.add('active');
+    }
+  });
+}
+
+
+function pickGoods(goods) {
+  const shuffled = [...goods].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 10);
+}
+
+function generateShop() {
+  const types = ['produce','food','weapons','materials','tavern','arconautic','animals'];
+  const t = selectedType === 'any' ? pick(types) : selectedType;
+  const data = shopTypes[t];
+
+  const name = pick(data.names);
+  const tagline = pick(data.taglines);
+  const overview = pick(data.overviews);
+  const appearance = pick(data.appearances);
+  const mannerism = pick(data.mannerisms);
+
+  const traderNames = {
+    produce: ["Mara Sweetleaf","Oss Greenhand","Brindle the Farmer","Yess Root-Tender","Ferwick Damp","Tangle-Cap Kori","Hessra of the Vine","Doral Sporehand","Wren Earthsmell","Catta the Grower","Issva of the Beds","Mull Freshcut","Sevet Dirtknee","Arch Canopyborn","Tillian the Green"],
+    food: ["Brace Salthand","Meven Tinlid","The Storekeeper","Orda Longseal","Sallick Provision","Carda Drygoods","Bruck the Merchant","Narrel Holdfast","Osswin Shelf","Pell the Provider","Vera Hardseal","Doric Longrack","Missala Stock","The Keeper","Brint Portside"],
+    weapons: ["Keth Ironhand","The Armourer","Varrick Edge","Holt Sharpson","Brace the Smith","Darrak Blade","Corda Steelwise","Skell the Ready","Ossa Hardedge","Fell Temper","Marwick Arms","The Ironsmith","Dreg Pointmaker","Varrel Forge","Cass the Edged"],
+    materials: ["The Merchant","Brock Timberhand","Oss the Measurer","Verwick Yard","Calla Plankside","Holt the Builder","Merrek Supply","Dray Ropework","The Timber Man","Sall the Measure","Breck Hardwood","Ossian Material","Mira the Broker","Ferwick Stock","Corda Yard"],
+    tavern: ["The Host","Mara Tapside","Brin the Pourer","Ossa Longdraft","The Keeper","Varwick Bar","Cass Brimful","Felwick the Warm","Dora Drinkside","Holt the Jolly","Sevet Pourfree","The Innkeeper","Brace Nightpour","Merrick the Open","Wellam Fill"],
+    arconautic: ["Keth the Precise","Oss Signal","The Instrument Maker","Verra Focused","Merrik Resonance","Corda Crystal","Ell the Attuned","Doric the Quiet","Bren Hymnsense","The Arconaut","Ferwick Device","Sallia Working","The Measurer","Holt Calibrated","Ress the Technical"],
+    animals: ["The Hunter","Brace Clawmark","Mara Beastwise","Oss the Keeper","Tangle Veth","Ferwick Catch","Corda Living","Holt the Patient","Dera Wild","Skell Bitemark","The Naturalist","Varn Creature","Brin the Tender","Moss Deep-Catch","Rell the Tracker"],
+  };
+
+  const bloodlines = ["Ardent","Ektus","Gau","Ironbound","Ketra"];
+  const traderName = pick(traderNames[t]);
+  const bloodline = pick(bloodlines);
+  const goods = pickGoods(data.goods);
+
+  shopCount++;
+  updateCount();
+  showCopyBar('copy-bar-shop');
+
+  const card = document.getElementById('shop-card');
+  card.className = 'shop-card populated';
+
+  card.innerHTML = `
+    <div class="shop-header">
+      <div class="shop-type-badge">${data.label}</div>
+      <div class="shop-name">${name}</div>
+      <div class="shop-tagline">"${tagline}"</div>
+    </div>
+    <div class="shop-body">
+      <div class="npc-section" style="padding:1.1rem 1.25rem;border-right:1px solid #2a2a22;border-bottom:1px solid #2a2a22;">
+        <span class="section-label">Overview</span>
+        <div class="section-text">${overview}</div>
+      </div>
+      <div class="npc-section" style="padding:1.1rem 1.25rem;border-bottom:1px solid #2a2a22;">
+        <span class="section-label">Trader</span>
+        <div class="section-text name-text" style="font-size:1.05rem;color:#e8e4d8;margin-bottom:0.2rem;">${traderName}</div>
+        <div class="section-text" style="font-size:0.8rem;color:#666;font-style:italic;margin-bottom:0.65rem;">${bloodline}</div>
+        <div class="section-text" style="margin-bottom:0.65rem;">${appearance}</div>
+        <div class="section-text" style="color:#aaa;font-style:italic;">${mannerism}</div>
+      </div>
+      <div style="grid-column:1/-1;padding:1.1rem 1.25rem;">
+        <span class="section-label">Shop Goods</span>
+        <ul class="goods-list">
+          ${goods.map(([item, desc]) => `
+            <li>
+              <span><strong style="color:#e8e4d8;font-weight:normal;">${item}</strong> — <span style="color:#888;font-size:0.88rem;">${desc}</span></span>
+              
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+  void card.offsetWidth;
+}
+
+
+// ─── NPC DATA ─────────────────────────────────────────────────────────────────
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const bloodlineData = {
+
+ardent: {
+  name: 'Ardent',
+  desc: 'Descendants of those humans that survived the explosive growth of the Wildsea.',
+  appearances: [
+    "Weathered skin the colour of ironroot bark, hair knotted with small carved beads from a port long gone",
+    "Broad-shouldered and sun-darkened, with the rolling gait of someone who grew up on a moving deck",
+    "Thin and angular, with clever eyes that miss nothing and hands that are never still",
+    "A face mapped with old scars, none of them shameful, each one carrying a story they'll tell if asked",
+    "Stocky and unhurried in movement, with a calm that reads as either confidence or threat depending on the light",
+    "Tall for an Ardent, with the lean look of someone who's been rationing for months and won't admit it",
+    "Copper-skinned with close-cropped grey hair, still strong at an age that shouldn't be possible without better food",
+    "Young-faced but old-eyed, wearing a coat stitched from the sails of at least three different ships",
+    "Hair grown to impractical length and braided with wire and glass beads, a private record of somewhere they've been",
+    "Calloused hands that suggest a lifetime of rope work, resting now on a table as if unused to stillness",
+    "A burn scar across one side of the neck, old and well-healed, the mark of someone who was present at a fire and chose to stay",
+    "Compact and energetic, the kind of person who fills a room without meaning to",
+    "Dressed in mismatched but well-maintained layers, each piece from a different place — a wearable log of their passage",
+    "Dark eyes that hold attention just a little too long, something calculating beneath the easy manner",
+    "Built like someone who started their life in hard labour and redirected it toward something only slightly less demanding",
+    "A navigator's squint, permanent, the mark of years reading horizon and canopy for something useful",
+    "A hand missing two fingers on the left, the wound clean and old — they're long since adjusted and it doesn't slow them",
+    "Freckled and flushed, looking perpetually as if they've just come in from the cold, which in their case is probably true",
+    "Silver-threaded hair worn loose, frame that suggests unusual physical capacity, posture that suggests they know it",
+    "A tattoo of a compass rose across the back of one hand, faded with age but still legible, pointing no particular direction",
+  ],
+  mannerisms: [
+    "Speaks slowly and precisely, as if every word costs something and they intend to get their money's worth",
+    "Laughs too loudly and doesn't apologise for it — a warm, engulfing laugh that disarms before it can be questioned",
+    "Has the habit of touching the beads in their hair when thinking — a counting gesture, old and unconscious",
+    "Maintains eye contact to an uncomfortable degree, not out of aggression but out of genuine, focused interest",
+    "Talks about the old world — before the Verdancy — as if they remember it personally, in loving and specific detail",
+    "Physically restless, always with something in their hands — a coin, a knife, a piece of rope being knotted and unknotted",
+    "Uses formal language with everyone regardless of their station, treating a dockworker and a port-governor the same way",
+    "Pauses before answering any question, even simple ones — a thinking pause, not evasion",
+    "Refers to their ship — past or present — as a person, with pronouns and moods and preferences",
+    "Deflects personal questions with questions of their own, never rudely but never failing to redirect",
+    "Has a habit of appraising everyone and everything they encounter, a visible calculation that they don't try to hide",
+    "Laughs at their own jokes before finishing them, then looks surprised if others don't follow",
+    "Speaks with quiet authority about topics they know well and complete silence about topics they don't",
+    "Hums under their breath while working — always the same tune, something they clearly can't name",
+    "Offers food to anyone they're speaking to, regardless of the context, as a social reflex too old to question",
+    "Uses nautical metaphors for everything — emotions, politics, relationships, all described in terms of weather and sail",
+    "Never sits with their back to a door. Never.",
+    "Has a habit of finishing other people's sentences, correctly, which others find either impressive or annoying",
+    "Stands very close in conversation — closer than most people expect — without apparent awareness of the discomfort",
+    "Gives directions using only landmark references, no cardinal directions, even in places they've never been",
+  ],
+  backstories: [
+    "Grew up on a ship, born to a crew, the sea the only home they've ever known — and it shows in how they treat land as temporary",
+    "Was a port-governor's factor for twelve years before the port was destroyed. They remember every debt owed and every favour given",
+    "Survived a leviathan encounter that killed the rest of their crew. They're not haunted by it. That's the part they can't explain",
+    "Spent three years in the Understory after their ship went down and they weren't ready to stop moving",
+    "Was the last surviving cartographer of a school of navigation that died with the port that housed it. They guard their charts",
+    "Built their reputation as a mediator between two ports that were edging toward war, then left before anyone could thank them",
+    "Raised five children on a ship, all of whom are now on different vessels doing different things, which they consider a success",
+    "Was crew on the vessel that made first contact with a previously unknown community three years ago. The contact went badly",
+    "Has been carrying a sealed message intended for a recipient who may or may not still be alive in a port three weeks' sail away",
+    "Made a significant amount of wealth in salvage, spent it all trying to recover someone else's loss, ended up back at zero. Content",
+    "Was an undercrew member who took command after the officers died and got the ship home. They never took a commission afterward",
+    "Grew up in a port that no longer exists — swallowed by the canopy shift five years ago. They went back once. They won't go again",
+    "Was a physicker before the incident they won't describe. They still carry the bag. They don't offer the service anymore",
+    "Has crossed the entire known canopy east to west and back, a journey that took eleven years and which they claim was accidental",
+    "Served as an interpreter for a deep-Tangle community for several years and came back changed in ways they're still cataloguing",
+  ],
+  hooks: [
+    "Carrying a sealed document for a recipient they haven't been able to reach in six months. They're beginning to wonder why",
+    "Looking for a specific wreck — they know roughly where it is and they know what's on it — but they can't crew it alone",
+    "Owes a significant favour to a port authority figure who is now calling it in for something morally complicated",
+    "Has information about a route that doesn't appear on any chart, and is deciding who to trust with it",
+    "Seeking passage to a specific port without being seen arriving — they'll pay well and explain later",
+    "In possession of something they found in salvage that multiple parties are apparently willing to pay for or take",
+    "Looking for someone specific — a family member, a former crewmate — last known to be heading toward where the crew is going",
+    "Has a debt to a group that is now demanding repayment in the form of a task they're not sure they can perform",
+    "Knows something damaging about a port official and is trying to figure out whether that knowledge is an asset or a liability",
+    "Needs a neutral party to carry a message between two groups who have stopped trusting direct communication",
+  ],
+},
+
+ektus: {
+  name: 'Ektus',
+  desc: 'Towering spine-studded cactoids whose deserts were eaten by the Verdancy.',
+  appearances: [
+    "Near seven feet tall, spines short and pale along the forearms and crown, skin the deep blue-green of old ironroot bark",
+    "Massive in proportion, the spines along their shoulders grown long enough to require custom-made clothing with reinforced shoulders",
+    "Compact for an Ektus — only a head taller than a large human — with dense, close-set spines and a powerful, deliberate build",
+    "Skin faded to a dull grey-green with age, spines worn short, but the frame still enormous and the presence still significant",
+    "Deep amber skin with spines that catch the light like glass, unusually fine-textured compared to most Ektus",
+    "Covered in small flowers blooming from between the spines — a sign of health, or a good season, or something they won't explain",
+    "Spine-tips dyed in the colours of a school of thought or a trade — a quiet declaration worn on the body",
+    "Young and vivid, skin an almost luminous green, spines still growing into their full length, moving with the particular energy of someone who hasn't been tested yet",
+    "Skin patterned in contrasting bands of dark and pale, a natural variation rare even among Ektus, attracting looks they're used to ignoring",
+    "Missing a section of spines along one arm — old damage, healed smooth, the absence telling something about a past they're selective about",
+    "Carrying themselves with the careful precision of someone very large who has learned to be aware of their footprint at all times",
+    "Dressed in practical layers that have been systematically cut away at spine-contact points, the modifications neat and practiced",
+    "Spine-tips painted white in mourning for someone, the tradition fading as the paint wears, not yet ready to let it go entirely",
+    "Unusual height even for an Ektus — moving through standard spaces with the practiced efficiency of someone who has been doing this for decades",
+    "A pattern of old thorn-marks across the forearms from an encounter they're willing to describe to anyone who asks for a price",
+  ],
+  mannerisms: [
+    "Speaks with a patient deliberateness — unhurried, precise, each sentence finished before the next is started",
+    "Has a tendency to go still in a way that is very still — a plant's stillness, absolute — while processing something difficult",
+    "Refers to sensory experience in botanical terms: smells are described as 'dry' or 'wet', sounds as 'bright' or 'root-deep'",
+    "Takes up exactly the space they have a right to take up and not an inch more, a courtesy practiced so long it's become instinct",
+    "Asks questions about the local environment before questions about people — a habit of orientation that predates conversation",
+    "Has a habit of touching their own spines when listening, a self-grounding gesture they're not aware of",
+    "Laughs rarely but completely — a physical event that shakes the spines and draws attention from across a room",
+    "Describes distances in time rather than measurement — 'three days' growth' rather than any numerical unit",
+    "Uses silence as punctuation, letting it sit between statements in a way that makes each word feel considered",
+    "Extends the spines along their forearms slightly when interested in something, involuntarily, like a flower following light",
+    "Has strong opinions about food and is not shy about expressing them, politely, at some length",
+    "Addresses everyone they've been introduced to by name, every time — a formality they consider basic respect",
+    "Moves around human-scaled spaces with the careful economy of someone who broke something valuable by accident, once, years ago",
+    "Has the habit of testing new surfaces before resting weight on them — a canopy-dweller's caution they never shed",
+    "Offers physical help before verbal help — a preference for action over words that sometimes overtakes the conversation",
+  ],
+  backstories: [
+    "Their family's community was among the last Ektus settlements destroyed by the Verdancy's spread from the east — they were three years old and don't remember the desert except in dreams",
+    "Served for a decade as a structural worker on a major port expansion project, their height and strength making them invaluable for work nobody else could reach",
+    "Was a botanical physician in a tradition that predates the Verdancy — the practice has changed but the knowledge, carefully tended, is still applicable",
+    "Trained as a navigator specifically because their height allows them to see further than most crew, an advantage that has served them and their employers well",
+    "Was exiled from a community of Ektus traditionalists for a philosophical disagreement they're willing to explain in detail if asked",
+    "Spent five years mapping the Tangle from below — a project that produced charts of extraordinary value and nearly killed them three times",
+    "Has been searching the waves for one specific pre-Verdancy Ektus artefact for the past eight years, following leads that keep extending the search",
+    "Was the sole survivor of a vessel lost in the deep Sink, rescued by a deep-Tangle community who kept them for two years before they found their way back",
+    "Grew up in a mixed community where Ektus and Ardent and Gau lived together, and carries the ease of that background into every room they enter",
+    "Was a decorated soldier in a conflict that ended badly, the kind of badly that means the winning side and the losing side agreed never to mention it",
+  ],
+  hooks: [
+    "Seeking a specific type of crezzerin-affected plant that grows in only one region — they need it for a botanical treatment nobody else knows how to make",
+    "Carrying a message from a traditional Ektus community to a member who left and hasn't been heard from in two years",
+    "Has been contracted to assess the structural stability of a port's main dock — but the assessment is going to produce a result the port doesn't want",
+    "Looking for a crew large enough to recover something from a depth they can't reach alone — the finder's share is generous",
+    "Owes a significant professional debt to a physicker who saved their life and is now in a situation that requires a different kind of help",
+    "In possession of a rare specimen that belongs, technically, to a community that doesn't know it's been found yet",
+    "Seeking passage past a port where they're known — they were involved in a dispute that's been resolved, but the people involved don't know that yet",
+    "Has information about a Tangle-level route that bypasses three ports' tolls, which makes it valuable and makes possessing it complicated",
+    "Looking for an Ardent who goes by a specific name, for reasons they'll explain when they find them",
+    "Needs a neutral witness for a negotiation with a community that doesn't trust Ektus — not because of anything they've done, just history",
+  ],
+},
+
+gau: {
+  name: 'Gau',
+  desc: 'Fungal humanoids set free from their old homes by this new world of rot and growth.',
+  appearances: [
+    "Capped with a wide, flat mushroom growth in a deep amber-brown, gills visible at the underside edge and faintly fragrant",
+    "Pale as birch wood, the cap a deep crimson-red with white spots worn down to ghost-marks with age",
+    "Compact and quick, with a cap that has grown asymmetric over time, tilting permanently to one side in a way that suits them",
+    "A deep blue-grey cap with a velvety surface, releasing faint spore-clouds when startled or excited",
+    "Unusually tall for a Gau, the cap proportionally enormous, supported by a neck that has thickened over the years",
+    "Cap patterned in concentric rings of colour — a natural marking that is also, in their culture, a record of where they've been",
+    "A cap grown through with bioluminescent threads, barely visible in daylight but unmissable in the dark",
+    "Young and energetic, cap still soft and bright, not yet settled into its adult colour and configuration",
+    "The cap has been partially broken — an old damage, healed over in a different direction — giving their silhouette a distinctive and immediately recognisable shape",
+    "A forest-floor brown cap dusted pale at the edges, the colouring of their particular colony line, which they're one of the last of",
+    "Wearing their cap's natural bioluminescence like a lantern — subtle, warm, flickering slightly when they're thinking hard",
+    "Cap deeply furrowed with age, colour faded from whatever vivid tone it once had to a gentle silver-brown, entirely serene",
+    "Mycelial threads visible along the forearms and neck, usually covered, currently visible — a sign of illness, excitement, or both",
+    "A deep ink-blue cap that makes them nearly invisible in the lower tangle light, a quality they may or may not be aware of",
+    "Cap grown with an unusual secondary structure — a shelf, an outgrowth — that has become load-bearing for the small items they always carry on their person",
+  ],
+  mannerisms: [
+    "Moves at two speeds: absolute stillness and very fast. There is no middle pace and the transition is without warning",
+    "Has a tendency to speak in mycological terms about non-fungal things — ideas 'fruit', relationships 'network', problems 'decompose'",
+    "Releases faint spore-puffs when amused — a physical tell they have tried unsuccessfully to suppress",
+    "Has the habit of tasting unfamiliar surfaces by pressing a palm against them — an information-gathering reflex they find normal",
+    "Exceptionally good at being unnoticed when they want to be, which makes their presence when they do want to be noticed feel significant",
+    "Asks questions before introductions — they want to know what you're doing before they'll tell you who they are",
+    "Laughs very quietly, a contained sound, but very frequently — they find the world genuinely funny in ways they can't always explain",
+    "Has a vast catalogue of songs and shanties from different cultures of the canopy and deploys them unexpectedly in conversation",
+    "Tends to touch the nearest available organic surface — wood, bark, a plant — when stressed, as a grounding mechanism",
+    "Refers to their current crew or community as 'the network', an affectionate term that implies they're not quite separating their own identity from the group's",
+    "Moves in ways that use vertical space as readily as horizontal space — climbing, perching, preferring to be above rather than at floor level",
+    "Makes decisions very quickly and is rarely wrong, which they attribute to luck and which others attribute to something more systematic",
+    "Ends statements with a slight upward inflection, making everything sound like a question until you're used to the pattern",
+    "Has strong proprioception and an unconscious awareness of the positions of everyone around them, visible in how they navigate a crowded space",
+    "Tells long, involved stories that appear to be going nowhere and then arrive at a specific and pointed destination at the end",
+  ],
+  backstories: [
+    "Grown from a colony that was itself old at the time of the Verdancy — their culture is one of the oldest continuous traditions on the waves, though few outside it know this",
+    "Raised in an unusual colony that had integrated deeply with Ardent and Ektus neighbours, giving them a cross-cultural ease that serves them well on mixed crews",
+    "Was sent out from their colony as a young adult to 'bring back knowledge', a traditional Gau coming-of-age that they have now extended for twelve years",
+    "Their original colony was destroyed by a crezzerin event three years ago. They are one of four survivors. They are handling it.",
+    "Was a spore-specialist in their colony — a role somewhere between physician, botanist, and priest — which gave them skills that have unexpected applications on the waves",
+    "Spent two years as an undercrew on a vessel before being promoted by circumstances rather than choice, and discovering they were better at leadership than they expected",
+    "Has been maintaining a mycelial network of contacts and information across the canopy for six years — a project with no clear purpose that has become its own reward",
+    "Was offered a commission as a ship's naturalist and took it for reasons that started as financial and have become something else",
+    "Their colony is famous for a particular type of crezzerin-processing that produces something of significant arconautic value, which means they're sought out for purposes beyond their own agenda",
+    "Left their colony following a disagreement about the community's direction — not acrimoniously, but finally — and have been conducting what they privately consider a long experiment in solitude",
+  ],
+  hooks: [
+    "Searching for a specific crezzerin-affected plant that their colony used to cultivate and which may still exist somewhere in the deep Tangle",
+    "Carrying spore-samples from their destroyed colony in a sealed container that needs to reach a specific mycosanctum before a deadline that is now quite close",
+    "Looking for information about a vessel that passed through this area six months ago — they won't say who was on it, but they will say it matters",
+    "Has been tasked by their colony network with assessing the trustworthiness of a specific port's new administration, and the crew has just come from there",
+    "Needs a crew willing to go below the Tangle for a recovery operation their own colony lacks the vessel capacity to undertake",
+    "In possession of a mycelial map of the local Tangle that would be enormously useful to anyone navigating below the thrash",
+    "Following a trail of a specific fungal disease affecting canopy communities — they're trying to understand its source before it reaches somewhere they care about",
+    "Looking for a location described in their colony's oldest records — a place that may no longer exist or may have become something else entirely",
+    "Has a message from a Gau network contact that is encoded in spore-language — they can translate it for someone who needs to know what it says",
+    "Seeking crew to witness a territorial claim their colony is making on a newly available spit — they need independent witnesses for the claim to stand",
+  ],
+},
+
+ironbound: {
+  name: 'Ironbound',
+  desc: 'Ship-spirits with driftwood bodies, out to sail the waves once more.',
+  appearances: [
+    "A frame of dark ironroot driftwood, limbs the smooth-worn grain of timber shaped by years in water, eyes a steady amber light",
+    "Built from the wreckage of at least three different vessels — the varied grain and colour of their body tells a layered story",
+    "Tall and narrow, the structure elegant in a way that suggests either a very fine original ship or years of careful self-repair",
+    "Stocky and dense, the wood deep and dark with age, barnacle-forms calcified at the joints from an early period in deep water",
+    "A frame that still carries the painted livery of the ship they were born from — faded, but visible, names or colours or a device",
+    "Unusually light-coloured wood, almost pale, newly formed or newly repaired, the amber eyes brighter than most for the relative newness",
+    "Asymmetric in a way that has become graceful with time — one arm longer, one shoulder higher — the result of repairs made in necessity rather than ideal conditions",
+    "Smooth-worn and deeply polished, the wood almost glasslike at the touch-points, the surface record of many years of use and care",
+    "Incorporates living wood — a section of still-growing branch at one shoulder, small leaves forming in season — a very unusual and very old choice",
+    "The wood of their body has been carved — not mechanically, but artistically — a record of voyages and ports and significant events etched into the grain",
+    "Dark water-stained wood with the look of timber that spent time in the deep before becoming this person — the marks of the Sink still visible",
+    "Decorated with brass fittings at the joints and structure, some clearly original, some clearly added over time, some of significant arconautic interest",
+    "A body that has clearly been rebuilt significantly at some point — the grain doesn't fully match between upper and lower, two ships become one person",
+    "Old in the way old wood is old — dense, dark, deeply grained, the weight of centuries visible in the surface — but moving with surprising ease",
+    "Built with a compartment or two visible in the structure — small, wooden, openable — clearly functional storage that has become part of the body",
+  ],
+  mannerisms: [
+    "Speaks slowly, each word vibrating slightly in a chest cavity that resonates like a hull in low wind",
+    "Refers to time in voyages rather than years — 'four long voyages ago', 'half a voyage since' — as if years are abstract but journeys are real",
+    "Has the habit of knocking on wood surfaces — tables, hulls, their own frame — a comfort gesture or a test, it's not clear which",
+    "Sits or stands always facing the direction of travel, or if stationary, facing what they've identified as north — a compass habit they cannot break",
+    "Speaks of the ship they were born from as a parent — not metaphorically — and describes its loss with the directness of someone who has fully processed a grief",
+    "Moves more gracefully on deck than on land, the rolling gait of someone whose body was built for motion not stillness",
+    "Has a fixed, unblinking gaze that unsettles people who don't know Ironbound — they cannot blink but have learned to periodically look away",
+    "Makes a faint creaking sound in cold weather or low pressure, which they're aware of and mildly embarrassed by",
+    "Refers to new acquaintances in their speech as 'crew' almost immediately — a social category that means something specific to them",
+    "Has strong, specific opinions about vessel quality, construction, and seamanship, and cannot always contain these opinions in the presence of a badly-run ship",
+    "Uses weather metaphors for emotional states — 'running into calm', 'heavy weather ahead' — in a way that seems literal rather than poetic",
+    "Touches wood surfaces when speaking as if drawing information from them — particularly ironroot, particularly old wood",
+    "Has a habit of estimating the age and origin of any ship they come within view of, aloud, whether or not anyone is listening",
+    "Laughs with the whole body — a rocking, structural sound — and does it rarely but genuinely",
+    "Defers to their crewmates on matters of culture and community but never on matters of seamanship or vessel care",
+  ],
+  backstories: [
+    "Born from a vessel that was one of the first fleet — an early post-Verdancy ship of historical significance, which makes them a living artefact they're not sure how to feel about",
+    "Their original ship was lost to a leviathan three hundred years ago. They were in the water for a long time before they found a new crew. They have a complicated relationship with leviathans",
+    "Served on twenty-seven different vessels across two centuries and can speak with specific expertise about the qualities and failures of each one",
+    "Was decommissioned — a practice some ports have — and spent forty years in a dry dock before being liberated by a crew who didn't know what they were taking on",
+    "Their ship was the first to successfully chart a deep-Tangle route that is still in use. They carry the original chart. It is one of the most valuable documents on the waves",
+    "Was present at the founding of a major port and carries a specific historical knowledge of its early administration that has become politically significant",
+    "Rebuilt themselves, over decades, from the wreckage of multiple ships — each one a vessel they were crew on, integrated with consent and ceremony",
+    "Was the sole Ironbound on a vessel that became famous for an act of extraordinary navigation. They are the last surviving member of that crew and the only one who remembers the whole voyage",
+    "Has spent the last thirty years looking for the community that built their original ship — a community that the Verdancy consumed, and which may or may not have survived in some form",
+    "Served as a harbour-spirit — a fixed Ironbound who tends a specific port — for eighty years before a change in port administration made the arrangement untenable",
+  ],
+  hooks: [
+    "Seeking crew to help recover the remains of their original ship from a known location — they want to give it a proper end",
+    "Carrying navigational knowledge of a region that no current chart accurately represents, and deciding who to give it to",
+    "Has been contacted by someone claiming to represent the community that built them, which should not be possible, and needs help assessing whether the claim is real",
+    "Looking for a specific ship — they knew it as a fellow vessel spirit two centuries ago and have recently received a signal that suggests it still exists",
+    "In possession of an old commission that technically grants authority over a stretch of water that is now very much in use by several parties",
+    "Seeking a crew to witness the formal decommissioning of a vessel they've decided to end — a ceremony that requires specific attendance",
+    "Needs access to a port they are formally banned from, for reasons that the ban's original issuers are no longer alive to enforce",
+    "Has been asked to serve as a neutral arbitrator in a dispute and needs crew who can provide security for the proceeding",
+    "Carrying a historical record relevant to a community that doesn't know it exists, with implications for their current political situation",
+    "Looking for a physicker or arconaut capable of treating a specific kind of wood-rot that has begun in a structural section they can't reach themselves",
+  ],
+},
+
+ketra: {
+  name: 'Ketra',
+  desc: "Humanity's less fortunate descendants, making their way up from hidden mines and buried buildings.",
+  appearances: [
+    "A translucent gelatinous form with faint bioluminescent threads running through the torso, wearing practical clothing that manages their tendency to seep at the seams",
+    "More opaque than most Ketra — almost solid-looking at a glance — but the hands in certain lights show the blue-green glow of their bio-electric system",
+    "Compact and quick, the gel of their form denser than usual, carrying an unusual amount of technology in pouches and holsters fitted to their frame",
+    "Tall for a Ketra, the translucency of their torso showing the outline of internal structures they've never had explained to their full satisfaction",
+    "A faintly luminous blue-green overall, the glow brighter around the forearms where they've integrated several pieces of tech into the gel",
+    "The gel of their body takes the colour of their immediate surroundings slightly — not camouflage exactly, more like an involuntary empathy",
+    "Dressed in a close-fitted suit of crezzerin-resistant material that manages their gel consistency in warm weather, the tech ports visible at wrist and collar",
+    "Older, the gel settled into near-opacity with age, moving with the slow certainty of someone who has seen what surprises the canopy has and is no longer surprised",
+    "Bio-electric discharges visibly crackling between the fingers when excited or agitated — they're aware of this and manage it in company with varying success",
+    "A small secondary form visible within the main body — not a separate organism, just an unusual internal structure that catches light and draws attention they've stopped noticing",
+    "The gel of their outer layer has been stabilised with a technology they developed themselves, giving them a surface that's almost skin-like except in extreme temperature",
+    "Wearing goggles that filter their own bio-electric output, giving them normal vision in environments where their glow would otherwise blind them to dark detail",
+    "A web of old scar tissue where the gel has permanently changed consistency following an injury — visible as a different quality of translucency across one side",
+    "Internal bioluminescence pulsing in the rhythm of their equivalent of a heartbeat — visible, regular, useful as a mood indicator to anyone who knows the pattern",
+    "Modified their gel-consistent outer form with what appears to be a partial exoskeleton — salvaged components, their own engineering, purely practical",
+  ],
+  mannerisms: [
+    "Talks about technology the way other people talk about weather — constantly, specifically, in terms others don't fully follow",
+    "Has a visible bio-electric flicker when they're thinking hard — faint sparks at the fingertips — which they've learned to read as an external clock for their own cognition",
+    "Refers to memory in geological terms — things are 'deep-filed', 'surface-accessible', 'buried under subsequent events'",
+    "Communicates more efficiently in tech-language — device signals, taps, coded short-forms — than in speech, and finds pure verbal conversation mildly effortful",
+    "Has a habit of repairing or improving anything mechanical they come near, without being asked, and being mildly confused when this is not welcome",
+    "Understates everything, dramatically. A catastrophic system failure is 'a minor inconsistency'. A near-fatal encounter is 'somewhat inconvenient'.",
+    "Asks extremely precise questions, every time, which has the effect of making others feel their own questions have been imprecise",
+    "Keeps the most important information until the exact right moment, not from manipulation but from a calibrated sense of when it will land most effectively",
+    "Has a very specific hierarchy of what constitutes a problem — small social friction rates very low, structural failure rates very high — and responds accordingly",
+    "Describes emotional states in technical terms — 'running at reduced capacity', 'operating outside normal parameters' — with complete sincerity",
+    "Never appears confused, even when they are — a trained response to conditions where confusion was dangerous",
+    "Moves efficiently and without wasted motion, a person who has lived in confined spaces and never lost the habit of economy",
+    "Has a wide vocabulary of pre-Verdancy technical terms they deploy naturally, occasionally having to explain them mid-sentence",
+    "Offers solutions before being asked for them — a habit so ingrained that they're often three steps ahead of the conversation",
+    "Expresses enthusiasm physically rather than vocally — the bio-electric glow brightens, the gel warms slightly, the rate of internal movement increases",
+  ],
+  backstories: [
+    "Spent the first twenty years of their life in a pre-Verdancy buried structure that had been continuously inhabited by Ketra for two hundred years — they emerged into the canopy already knowing more about old-world tech than anyone above had for generations",
+    "Was the lead engineer on a port's primary power infrastructure for eight years before the project they were building toward was cancelled for political reasons",
+    "Discovered a cache of pre-Verdancy technical documentation in the deep levels of a sunken building and spent five years systematically working through its contents",
+    "Was part of a Ketra team that first made contact with a surface community from below — the negotiations took three years and the experience changed their understanding of both worlds",
+    "Specialised in crezzerin interaction with electronic systems — a field that barely existed before they started working in it and which is now increasingly important",
+    "Built a functional communication network between three deep-level Ketra communities and a surface port, which is now an important piece of infrastructure that nobody else fully understands",
+    "Left a well-resourced underground settlement to 'check something' on the surface and has been checking things on the surface for eleven years",
+    "Has reconstructed, from fragments, the technical specifications of a pre-Verdancy machine that several parties are very interested in, for different reasons",
+    "Was exiled from their community for making a decision about shared technology that the community considered theft and they consider obvious necessity",
+    "Served as a tech-advisor to three different port administrations and has a thorough and unsparing understanding of how each one actually functions beneath its official face",
+  ],
+  hooks: [
+    "Looking for a specific piece of pre-Verdancy technology that they believe is in a wreck on this stretch of the canopy — they have the schematics, they need the muscle",
+    "Has been contracted to repair and restart a piece of infrastructure at a distant port — the fee is significant and the technical challenge is the main attraction",
+    "Carrying the only known copy of a technical document that several parties want, for different reasons, and is trying to get it somewhere it can be copied safely",
+    "Needs access to a specific depth below the current canopy level — a depth that requires a vessel equipped for the Sink — to recover something they've been tracking for years",
+    "Has information about a crezzerin interaction with a port's power infrastructure that the port hasn't noticed yet and may not respond well to being told about",
+    "Looking for a Ketra community that separated from their home settlement two generations ago and hasn't been in contact since",
+    "In possession of a functioning piece of technology that nobody else can identify or repair if it fails — they need to get it to somewhere it can be properly archived",
+    "Has been asked to audit a ship's mechanical systems and has found something that the ship's owner is not going to like hearing about",
+    "Seeking crew willing to go below the Tangle to verify whether a pre-Verdancy structure they've located from old maps is actually still there",
+    "Needs a witness for a technical demonstration that could change the understanding of crezzerin interaction with electronic systems — and needs the witness to be credible",
+  ],
+},
+
+}; // end bloodlineData
+
+// ─── ITEM POOLS ──────────────────────────────────────────────────────────────
+
+const tradeItems = {
+  salvage: [
+    "A brass compass that points toward the nearest water source, not north",
+    "A sealed glass jar of saltwater — most people alive have never seen an ocean",
+    "A perfectly preserved book in a waxed case, written in a pre-Verdancy script",
+    "A hand-cranked music box that plays a melody everyone finds unbearably sad",
+    "A vial of pure liquid crezzerin, still active",
+    "A mirror that shows the reflection of what stood before it twelve hours ago",
+    "A leviathan tooth, warm to the touch and faintly humming",
+    "Half a chainsaw blade from a vessel far larger than anything in current service",
+    "A rope woven from still-living vine, reaching toward light sources",
+    "A glass orb filled with bioluminescent fluid pulsing in rhythm with nothing",
+    "A mechanical hand with seven fingers, responsive to touch",
+    "A locked iron safe that shifts when tilted",
+    "A rolled canvas painting of a saltwater coastline",
+    "A waterproofed journal with entries that grow increasingly fragmented",
+    "A perfectly spherical stone with no seam or marking",
+    "A mechanical clock still running, with thirteen hours on its face",
+    "A flask engraved with a name and a date — the date is years in the future",
+    "A crezzerin crystal formation the size of a human head",
+    "A crezzerin-warped animal skull growing in geometric directions",
+    "A case of bottled ink in colours not achievable with natural dyes",
+    "A small sack of coins from a currency not minted in two centuries",
+    "A mechanical bird that sings one pure note and has a hollow compartment inside",
+    "A printed broadsheet from 220 years ago, headlining the first wildsea crossing",
+    "An illustration portfolio of deep-Understory fauna, annotated and dated",
+    "A crezzerin-touched feather the length of a person's arm",
+    "Twelve stoppered flasks containing preserved hymn-fragments — they occasionally leak",
+    "A glass eye that appears to track movement when placed on a surface",
+    "A pre-Verdancy fire-making kit — extremely illegal in most ports",
+    "A telescope that shows the sky as it appeared at one fixed moment in the past",
+    "A cage built for something humanoid in size, lock broken from inside",
+    "A bolt of cloth woven with conductive wire — electric when dampened",
+    "A sealed tin of biscuits from a bakery that burned down forty years ago",
+    "A set of surgical instruments engraved with an institution nobody recognises",
+    "A mechanical compass adapted to measure crezzerin density rather than bearing",
+    "A length of chain whose links are each a different metal in a meaningful sequence",
+    "A carved figurine with proportions subtly wrong in an increasingly unsettling way",
+    "A hand mirror engraved on the back with something between instructions and a prayer",
+    "Three glass ampoules of a compound that causes vivid pleasant hallucinations — or did",
+    "A block of material that appears to be wood but emits cold blue light when scored",
+    "A hat box containing a hat containing a compartment containing a letter with no salutation",
+  ],
+  cargo: [
+    "Barrels of clean water, sealed, heavily secured",
+    "Bolts of spider-silk cloth, strong as leather and light as linen",
+    "Sealed crates of medicinal spore-treatments",
+    "Fire-starting materials — deeply illegal, carefully packaged",
+    "An arconautic instrument whose function is undocumented",
+    "A very large sum of currency in a locked strongbox",
+    "Preserved old-world foods in hermetically sealed tins",
+    "A shipment of crezzerin crystals in lead-lined boxes, manifested as minerals",
+    "Survey maps of a newly discovered island",
+    "Cold storage units, contents unknown, temperature critical",
+    "Spare parts for a vessel model out of production for thirty years",
+    "A working prototype of an arconautic device, nervously carried",
+    "Navigation charts for deep-Tangle routes not yet in any archive",
+    "Old ship manifests and navigation logs collected for unstated reasons",
+    "A collection of rare pigments with a combined value that makes people uncomfortable",
+    "A case of clockwork components that collectively constitute something formidable",
+    "Living mushroom cultures in sealed ceramic pots",
+    "A rolled architectural plan for a building no current port could support",
+    "Breeding stock of useful canopy insects, moderately dangerous if disturbed",
+    "A case of chemical batteries with enough charge to power a settlement for a month",
+    "A consignment of crezzerin suppression compound in industrial quantities",
+    "A sealed container of chemical reagents manifested as dyes",
+    "Correspondence from a reclusive arconaut sent to twelve addresses simultaneously",
+    "A mechanical press and a crate of lead type — a discreet print operation",
+    "A large and comprehensive medical kit bound for a tiny port",
+    "A working automaton, crated and dormant, buyer uncommunicative",
+    "A shipment of signal equipment in excess of any legitimate communication need",
+    "Preserved eggs from a species naturalists say cannot still be alive",
+    "A sealed diplomatic pouch addressed to a diplomat assassinated last month",
+    "Old-world currency, legal tender nowhere, significant melt value",
+  ],
+  specimens: [
+    "A bark-beetle the size of a dog, still faintly warm",
+    "A cluster of bioluminescent fungi still alive on bark, pulsing in three-beat rhythm",
+    "A canopy moth with a wingspan of four feet, wing-patterns resembling a map",
+    "A chrysalis of extraordinary size, occupant visible but unidentifiable",
+    "A crezzerin-affected songbird singing continuously in a minor key",
+    "A deep-tangle lizard whose skin shifts colour in response to nearby emotion",
+    "A living vine cutting that grows toward spoken language",
+    "A leviathan scale, a metre across, harder than any processed metal",
+    "A seed pod the size of a barrel, ticking occasionally",
+    "A mycelial network sample, alive, spread across a glass frame like a map",
+    "A jar of spores that produce geometric light structures when released",
+    "A sleeping bat-analogue with a three-metre wingspan, producing audible tones",
+    "A vine cutting secreting a mild paralytic from its leaf-edges",
+    "A preserved deep-Sink fish with forward-facing eyes and an impossible jaw",
+    "A deep-root worm, ten metres coiled, periodically translucent",
+    "A mushroom producing temporary pleasant non-addictive euphoria",
+    "A crezzerin crystal grown through a living branch, both still developing",
+    "A bird partially merged with a flowering vine, both organisms thriving",
+    "A canopy hawk with secondary eyes that never look directly at anything",
+    "A carnivorous vine section that has begun producing sedative flowers",
+    "A deep-tangle jellyfish analogue — airborne, twenty-metre tendrils",
+    "A snail whose shell has mineralised into a metal alloy — still alive, very slow",
+    "A colony of ants occupying a resin block, tunnels in impossible geometry",
+    "A crezzerin-warped crow able to mimic emotional registers, not just sounds",
+    "A preserved deep-Sink specimen matching nothing in any naturalist's records",
+    "A crezzerin crystal that has grown spontaneously into a recognisable face",
+    "A section of vine still alive in conditions that should have killed it hours after collection",
+    "A deep-root grub halfway through a metamorphosis that is not producing a grub",
+    "A lichen culture that processes crezzerin into a harmless compound",
+    "A living organism from the Drown that is thoroughly unconcerned by its circumstances",
+  ],
+};
+
+// ─── NAMES ───────────────────────────────────────────────────────────────────
+
+const names = {
+  ardent: [
+    "Maren Saltborn","Edric Keel","Tass Hollowood","Brinya of the Crane","Calven Shore",
+    "Duskwheel Tam","Sevet Chase","Orrin Threadnail","Lucet Fallow","Brack Twentyleague",
+    "Yssel of the Low Wake","Corda Tine","Halvard Pitch","Nimue Brackwater","Fenwick Drogue",
+    "Sera Copperline","Jael Harrowmark","Ossian Two-Watches","Tybalt Reefsong","Mira Stowaway",
+  ],
+  ektus: [
+    "Ssarrak Dune-Root","Thorn-of-the-East Grel","Vaskh the Standing","Okkresh","Preel Sandborne",
+    "Grath Spinecrown","Ssuveth the Patient","Dorrakh","Hessvel Long-Reach","Narrk of the Old Dunes",
+    "Barss Ironspine","Queth Dustwalker","Takkrel","Yorrakh the Still","Fessara Greenbark",
+    "Ashspine Kel","Dhuran Sandmemory","Vrekka Tall","Sseth Driftborn","Graakh Rootsense",
+  ],
+  gau: [
+    "Frill","Spore-Dance Kem","Myc","Velvet the Swift","Cap-and-Run","Driftcap Oss",
+    "Shimmer","Puffball","Tangle-Root Vel","Bracket","Dustfall","Inkgill","Spindrift",
+    "Cap Lorn","Murrain","Fossilmoss","Yellin of the High Shelf","Crumble","Decay-Bright",
+    "Latch","Ferment","Sporecloud Niv","Old Growth","New Fruiting","Canopy-Cap Syl",
+  ],
+  ironbound: [
+    "The Unbroken Compass","Drift-Memory","Keel-Song","Three-Hundred-Leagues","Twice-Salvaged",
+    "The Current's Name","Deep-Water Voice","Saltgrain","Running Light","Wrackwood",
+    "Last-Anchor","The Remembered Hull","Bilge-and-Stars","Long-Course","Windward Always",
+    "True-Bearing","Harbour-End","The Living Chart","Knot-and-Splice","First Watch",
+  ],
+  ketra: [
+    "Bright-Six-Seven","Keth","Pulse-and-Measure","The Functional One","Circuit Voss",
+    "Lumen Kret","Steady-Signal","Overflow","Groundpath","Residual Charge",
+    "Node-Walker","Kessiv","Sparktrace","Volt","Null-Response","The Corrected Error",
+    "Bright Tertiary","Krevoss","Signal-Clear","Driftcurrent Mem",
+  ],
+};
+
+const titles = [
+  "wildsailor, between ships",
+  "salvager of the middle tangle",
+  "late of the port of",
+  "independent merchant, currently",
+  "naturalist, currently afield",
+  "arconaut, between commissions",
+  "ship's physicker, recently retired",
+  "navigator, currently unattached",
+  "crew, origin unstated",
+  "wanderer, the good kind",
+  "trader, small operations only",
+  "cartographer, working",
+  "courier, between deliveries",
+  "specialist, unspecified",
+  "formerly of a vessel whose name they won't use",
+];
+
+// ─── GENERATOR ───────────────────────────────────────────────────────────────
+
+let selectedBloodline = 'any';
+
+function setBloodline(bl) {
+  selectedBloodline = bl;
+  document.querySelectorAll('.bl-btn').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.bl-btn');
+  btns.forEach(b => { if (b.textContent.toLowerCase() === bl || (bl === 'any' && b.textContent.toLowerCase() === 'any')) b.classList.add('active'); });
+}
+
+
+function pickItems() {
+  // 3 items from any combination of salvage/cargo/specimens
+  const allItems = [];
+  const types = ['salvage','cargo','specimens'];
+  // Randomly assign 3 types (with repetition allowed)
+  const chosen = [pick(types), pick(types), pick(types)];
+  const used = {salvage: new Set(), cargo: new Set(), specimens: new Set()};
+  return chosen.map(type => {
+    let idx;
+    do { idx = Math.floor(Math.random() * tradeItems[type].length); } while (used[type].has(idx));
+    used[type].add(idx);
+    return { type, text: tradeItems[type][idx] };
+  });
+}
+
+function generateNPC() {
+  const bloodlines = ['ardent','ektus','gau','ironbound','ketra'];
+  const bl = selectedBloodline === 'any' ? pick(bloodlines) : selectedBloodline;
+  const data = bloodlineData[bl];
+
+  const name = pick(names[bl]);
+  const title = pick(titles);
+  const appearance = pick(data.appearances);
+  const mannerism = pick(data.mannerisms);
+  const backstory = pick(data.backstories);
+  const hook = pick(data.hooks);
+  const items = pickItems();
+
+  npcCount++;
+  updateCount();
+  showCopyBar('copy-bar-npc');
+
+  const labelClass = bl + '-l';
+  const badgeClass = bl;
+
+  const card = document.getElementById('npc-card');
+  card.className = 'npc-card populated';
+
+  card.innerHTML = `
+    <div class="npc-header">
+      <div class="npc-bloodline ${badgeClass}">${data.name}</div>
+      <div class="npc-name">${name}</div>
+      <div class="npc-title">${title}</div>
+    </div>
+    <div class="npc-sections">
+      <div class="npc-section">
+        <span class="section-label ${labelClass}">Appearance</span>
+        <div class="section-text">${appearance}</div>
+      </div>
+      <div class="npc-section">
+        <span class="section-label ${labelClass}">Mannerisms</span>
+        <div class="section-text">${mannerism}</div>
+      </div>
+      <div class="npc-section">
+        <span class="section-label ${labelClass}">Backstory</span>
+        <div class="section-text">${backstory}</div>
+      </div>
+      <div class="npc-section">
+        <span class="section-label ${labelClass}">Hook</span>
+        <div class="section-text">${hook}</div>
+      </div>
+      <div class="npc-section full">
+        <span class="section-label ${labelClass}">Items for Trade</span>
+        <ul class="trade-list">
+          ${items.map(i => `<li>${i.text}<span class="trade-tag">${i.type}</span></li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+
+  // Force animation reset
+  void card.offsetWidth;
+}
+
+</script>
+</body>
+</html>
